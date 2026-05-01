@@ -41,8 +41,7 @@ export function startHttpServer({
       sessionIdGenerator: undefined,
     });
     res.on("close", () => {
-      transport.close();
-      server.close();
+      server.close().catch((err) => console.error("[http] cleanup error:", err));
     });
     try {
       await server.connect(transport);
