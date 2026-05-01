@@ -35,7 +35,7 @@ export function registerMessierResources(server: McpServer): void {
         type: o.type,
         magnitude: o.magnitude,
         constellation: o.constellation,
-        uri: `sky://messier/${o.id.toLowerCase()}`,
+        uri: `sky://messier/${o.id}`,
       }));
       return {
         contents: [
@@ -56,7 +56,7 @@ export function registerMessierResources(server: McpServer): void {
     {
       title: "Messier Object",
       description:
-        "Full record for a single Messier object by id (e.g. sky://messier/m31). " +
+        "Full record for a single Messier object by id (e.g. sky://messier/M31). " +
         "Returns name, type, constellation, J2000 RA/Dec, magnitude, size, best viewing " +
         "months, and a prose description. Case-insensitive.",
       mimeType: "application/json",
