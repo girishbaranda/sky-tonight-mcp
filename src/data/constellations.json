@@ -1,0 +1,882 @@
+[
+  {
+    "name": "Andromeda",
+    "latin_genitive": "Andromedae",
+    "abbreviation": "And",
+    "hemisphere": "northern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Alpheratz", "magnitude": 2.06 },
+    "notable_objects": ["M31 (Andromeda Galaxy)", "M32", "M110"],
+    "story": "Princess Andromeda from Greek mythology, chained to a rock as sacrifice but saved by Perseus."
+  },
+  {
+    "name": "Antlia",
+    "latin_genitive": "Antliae",
+    "abbreviation": "Ant",
+    "hemisphere": "southern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Alpha Antliae", "magnitude": 4.25 },
+    "notable_objects": [],
+    "story": "The Air Pump. A modern southern constellation introduced by Lacaille in the 18th century, named after the air pump invented by physicist Robert Boyle."
+  },
+  {
+    "name": "Apus",
+    "latin_genitive": "Apodis",
+    "abbreviation": "Aps",
+    "hemisphere": "southern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Alpha Apodis", "magnitude": 3.83 },
+    "notable_objects": [],
+    "story": "The Bird of Paradise. A southern constellation introduced in the 16th century from observations during the Dutch East Indies voyages."
+  },
+  {
+    "name": "Aquarius",
+    "latin_genitive": "Aquarii",
+    "abbreviation": "Aqr",
+    "hemisphere": "equatorial",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Sadalsuud", "magnitude": 2.87 },
+    "notable_objects": ["M2", "M72", "NGC 7293 (Helix Nebula)", "NGC 7009 (Saturn Nebula)"],
+    "story": "The Water Bearer. One of the oldest recognized constellations, often associated with Ganymede, cupbearer to the Greek gods."
+  },
+  {
+    "name": "Aquila",
+    "latin_genitive": "Aquilae",
+    "abbreviation": "Aql",
+    "hemisphere": "equatorial",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Altair", "magnitude": 0.76 },
+    "notable_objects": [],
+    "story": "The Eagle. In Greek mythology, the eagle that carried Zeus's thunderbolts and abducted Ganymede to Olympus."
+  },
+  {
+    "name": "Ara",
+    "latin_genitive": "Arae",
+    "abbreviation": "Ara",
+    "hemisphere": "southern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Beta Arae", "magnitude": 2.84 },
+    "notable_objects": ["NGC 6193"],
+    "story": "The Altar. In Greek mythology, the altar where the gods swore allegiance before battling the Titans."
+  },
+  {
+    "name": "Aries",
+    "latin_genitive": "Arietis",
+    "abbreviation": "Ari",
+    "hemisphere": "northern",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Hamal", "magnitude": 2.00 },
+    "notable_objects": [],
+    "story": "The Ram. Represents the golden-fleeced ram of Greek mythology that carried Phrixus to safety, source of the Golden Fleece sought by Jason."
+  },
+  {
+    "name": "Auriga",
+    "latin_genitive": "Aurigae",
+    "abbreviation": "Aur",
+    "hemisphere": "northern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Capella", "magnitude": 0.08 },
+    "notable_objects": ["M36", "M37", "M38"],
+    "story": "The Charioteer. Often identified with Erichthonius, legendary king of Athens who invented the four-horse chariot."
+  },
+  {
+    "name": "Bootes",
+    "latin_genitive": "Bootis",
+    "abbreviation": "Boo",
+    "hemisphere": "northern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Arcturus", "magnitude": -0.05 },
+    "notable_objects": [],
+    "story": "The Herdsman or Plowman. Often depicted driving the bears (Ursa Major and Minor) around the celestial pole."
+  },
+  {
+    "name": "Caelum",
+    "latin_genitive": "Caeli",
+    "abbreviation": "Cae",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Alpha Caeli", "magnitude": 4.45 },
+    "notable_objects": [],
+    "story": "The Chisel. A faint southern constellation introduced by Lacaille in the 18th century, representing an engraver's chisel."
+  },
+  {
+    "name": "Camelopardalis",
+    "latin_genitive": "Camelopardalis",
+    "abbreviation": "Cam",
+    "hemisphere": "northern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Beta Camelopardalis", "magnitude": 4.03 },
+    "notable_objects": ["NGC 2403"],
+    "story": "The Giraffe. A faint northern constellation introduced in 1613 by Petrus Plancius, depicting a giraffe."
+  },
+  {
+    "name": "Cancer",
+    "latin_genitive": "Cancri",
+    "abbreviation": "Cnc",
+    "hemisphere": "northern",
+    "best_months": ["Feb", "Mar", "Apr"],
+    "brightest_star": { "name": "Tarf", "magnitude": 3.52 },
+    "notable_objects": ["M44 (Beehive Cluster)", "M67"],
+    "story": "The Crab. In Greek mythology, the crab sent by Hera to distract Heracles during his battle with the Hydra."
+  },
+  {
+    "name": "Canes Venatici",
+    "latin_genitive": "Canum Venaticorum",
+    "abbreviation": "CVn",
+    "hemisphere": "northern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Cor Caroli", "magnitude": 2.89 },
+    "notable_objects": ["M3", "M51 (Whirlpool Galaxy)", "M63", "M94", "M106"],
+    "story": "The Hunting Dogs. Introduced by Hevelius in the 17th century, representing the dogs Asterion and Chara held by Bootes."
+  },
+  {
+    "name": "Canis Major",
+    "latin_genitive": "Canis Majoris",
+    "abbreviation": "CMa",
+    "hemisphere": "southern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Sirius", "magnitude": -1.46 },
+    "notable_objects": ["M41"],
+    "story": "The Greater Dog. Represents one of Orion's hunting dogs, containing Sirius, the brightest star in the night sky."
+  },
+  {
+    "name": "Canis Minor",
+    "latin_genitive": "Canis Minoris",
+    "abbreviation": "CMi",
+    "hemisphere": "northern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Procyon", "magnitude": 0.34 },
+    "notable_objects": [],
+    "story": "The Lesser Dog. Represents the smaller of Orion's two hunting dogs, with Procyon as its brightest star."
+  },
+  {
+    "name": "Capricornus",
+    "latin_genitive": "Capricorni",
+    "abbreviation": "Cap",
+    "hemisphere": "southern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Deneb Algedi", "magnitude": 2.85 },
+    "notable_objects": ["M30"],
+    "story": "The Sea Goat. An ancient zodiacal constellation depicted as a creature with the front of a goat and tail of a fish."
+  },
+  {
+    "name": "Carina",
+    "latin_genitive": "Carinae",
+    "abbreviation": "Car",
+    "hemisphere": "southern",
+    "best_months": ["Feb", "Mar", "Apr"],
+    "brightest_star": { "name": "Canopus", "magnitude": -0.74 },
+    "notable_objects": ["NGC 3372 (Carina Nebula)", "IC 2602 (Southern Pleiades)", "NGC 2516"],
+    "story": "The Keel. Part of the ancient Argo Navis (the ship of the Argonauts), divided by Lacaille into Carina, Puppis, and Vela."
+  },
+  {
+    "name": "Cassiopeia",
+    "latin_genitive": "Cassiopeiae",
+    "abbreviation": "Cas",
+    "hemisphere": "northern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Schedar", "magnitude": 2.24 },
+    "notable_objects": ["M52", "M103", "NGC 457 (Owl Cluster)"],
+    "story": "The vain queen of Greek mythology, mother of Andromeda, who boasted of her beauty and was placed in the sky tied to a chair."
+  },
+  {
+    "name": "Centaurus",
+    "latin_genitive": "Centauri",
+    "abbreviation": "Cen",
+    "hemisphere": "southern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Alpha Centauri", "magnitude": -0.27 },
+    "notable_objects": ["Omega Centauri (NGC 5139)", "NGC 5128 (Centaurus A)"],
+    "story": "The Centaur. Often identified with Chiron, the wise centaur and tutor of heroes in Greek mythology."
+  },
+  {
+    "name": "Cepheus",
+    "latin_genitive": "Cephei",
+    "abbreviation": "Cep",
+    "hemisphere": "northern",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Alderamin", "magnitude": 2.45 },
+    "notable_objects": ["NGC 7023 (Iris Nebula)"],
+    "story": "The King of Aethiopia, husband of Cassiopeia and father of Andromeda in Greek mythology."
+  },
+  {
+    "name": "Cetus",
+    "latin_genitive": "Ceti",
+    "abbreviation": "Cet",
+    "hemisphere": "equatorial",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Diphda", "magnitude": 2.02 },
+    "notable_objects": ["M77"],
+    "story": "The Sea Monster. The whale or sea monster sent by Poseidon to devour Andromeda before being slain by Perseus."
+  },
+  {
+    "name": "Chamaeleon",
+    "latin_genitive": "Chamaeleontis",
+    "abbreviation": "Cha",
+    "hemisphere": "southern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Alpha Chamaeleontis", "magnitude": 4.07 },
+    "notable_objects": [],
+    "story": "The Chameleon. A southern constellation introduced in the late 16th century from Dutch navigators' observations."
+  },
+  {
+    "name": "Circinus",
+    "latin_genitive": "Circini",
+    "abbreviation": "Cir",
+    "hemisphere": "southern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Alpha Circini", "magnitude": 3.19 },
+    "notable_objects": [],
+    "story": "The Compass (drafting tool). A small southern constellation introduced by Lacaille in the 18th century."
+  },
+  {
+    "name": "Columba",
+    "latin_genitive": "Columbae",
+    "abbreviation": "Col",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Phact", "magnitude": 2.65 },
+    "notable_objects": [],
+    "story": "The Dove. Introduced by Plancius in the 16th century, often associated with the dove Noah released from the ark."
+  },
+  {
+    "name": "Coma Berenices",
+    "latin_genitive": "Comae Berenices",
+    "abbreviation": "Com",
+    "hemisphere": "northern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Beta Comae Berenices", "magnitude": 4.26 },
+    "notable_objects": ["M53", "M64 (Black Eye Galaxy)", "M85", "M88", "M91", "M98", "M99", "M100"],
+    "story": "Berenice's Hair. Named for Queen Berenice II of Egypt, who sacrificed her long hair to ensure her husband's safe return from war."
+  },
+  {
+    "name": "Corona Australis",
+    "latin_genitive": "Coronae Australis",
+    "abbreviation": "CrA",
+    "hemisphere": "southern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Meridiana", "magnitude": 4.10 },
+    "notable_objects": [],
+    "story": "The Southern Crown. An ancient constellation depicting a wreath, often associated with the crown of Sagittarius or Bacchus."
+  },
+  {
+    "name": "Corona Borealis",
+    "latin_genitive": "Coronae Borealis",
+    "abbreviation": "CrB",
+    "hemisphere": "northern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Alphecca", "magnitude": 2.22 },
+    "notable_objects": [],
+    "story": "The Northern Crown. Represents the crown given by Dionysus to Ariadne and cast into the heavens after her death."
+  },
+  {
+    "name": "Corvus",
+    "latin_genitive": "Corvi",
+    "abbreviation": "Crv",
+    "hemisphere": "southern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Gienah", "magnitude": 2.59 },
+    "notable_objects": ["NGC 4038/4039 (Antennae Galaxies)"],
+    "story": "The Crow. In Greek mythology, the raven sent by Apollo that was placed in the sky for failing to deliver water promptly."
+  },
+  {
+    "name": "Crater",
+    "latin_genitive": "Crateris",
+    "abbreviation": "Crt",
+    "hemisphere": "southern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Delta Crateris", "magnitude": 3.56 },
+    "notable_objects": [],
+    "story": "The Cup. Represents the cup of Apollo, associated in mythology with the raven (Corvus) that was sent to fetch water."
+  },
+  {
+    "name": "Crux",
+    "latin_genitive": "Crucis",
+    "abbreviation": "Cru",
+    "hemisphere": "southern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Acrux", "magnitude": 0.77 },
+    "notable_objects": ["NGC 4755 (Jewel Box Cluster)", "Coalsack Nebula"],
+    "story": "The Southern Cross. The smallest constellation, prominent in southern hemisphere skies and used for navigation since antiquity."
+  },
+  {
+    "name": "Cygnus",
+    "latin_genitive": "Cygni",
+    "abbreviation": "Cyg",
+    "hemisphere": "northern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Deneb", "magnitude": 1.25 },
+    "notable_objects": ["M29", "M39", "NGC 7000 (North America Nebula)", "Veil Nebula"],
+    "story": "The Swan. Often identified as Zeus disguised as a swan, or the swan into which Orpheus was transformed after his death."
+  },
+  {
+    "name": "Delphinus",
+    "latin_genitive": "Delphini",
+    "abbreviation": "Del",
+    "hemisphere": "northern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Rotanev", "magnitude": 3.63 },
+    "notable_objects": [],
+    "story": "The Dolphin. Honors the dolphin sent by Poseidon to find the sea-nymph Amphitrite, or the one that saved the poet Arion."
+  },
+  {
+    "name": "Dorado",
+    "latin_genitive": "Doradus",
+    "abbreviation": "Dor",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Alpha Doradus", "magnitude": 3.27 },
+    "notable_objects": ["Large Magellanic Cloud", "NGC 2070 (Tarantula Nebula)"],
+    "story": "The Dolphinfish (or Goldfish). A southern constellation introduced by Dutch navigators in the late 16th century."
+  },
+  {
+    "name": "Draco",
+    "latin_genitive": "Draconis",
+    "abbreviation": "Dra",
+    "hemisphere": "northern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Eltanin", "magnitude": 2.23 },
+    "notable_objects": ["NGC 6543 (Cat's Eye Nebula)"],
+    "story": "The Dragon. Often identified with the dragon Ladon that guarded the golden apples of the Hesperides, slain by Heracles."
+  },
+  {
+    "name": "Equuleus",
+    "latin_genitive": "Equulei",
+    "abbreviation": "Equ",
+    "hemisphere": "northern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Kitalpha", "magnitude": 3.92 },
+    "notable_objects": [],
+    "story": "The Little Horse. The second-smallest constellation, representing a small horse, possibly the brother of Pegasus."
+  },
+  {
+    "name": "Eridanus",
+    "latin_genitive": "Eridani",
+    "abbreviation": "Eri",
+    "hemisphere": "equatorial",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Achernar", "magnitude": 0.46 },
+    "notable_objects": [],
+    "story": "The River. A long, winding constellation representing a great mythological river, sometimes identified as the Nile or the Po."
+  },
+  {
+    "name": "Fornax",
+    "latin_genitive": "Fornacis",
+    "abbreviation": "For",
+    "hemisphere": "southern",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Alpha Fornacis", "magnitude": 3.87 },
+    "notable_objects": ["NGC 1316 (Fornax A)"],
+    "story": "The Furnace. A modern southern constellation introduced by Lacaille in the 18th century, named for a chemical furnace."
+  },
+  {
+    "name": "Gemini",
+    "latin_genitive": "Geminorum",
+    "abbreviation": "Gem",
+    "hemisphere": "northern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Pollux", "magnitude": 1.14 },
+    "notable_objects": ["M35", "NGC 2392 (Eskimo Nebula)"],
+    "story": "The Twins. Represents Castor and Pollux, the twin sons of Leda in Greek mythology, who became patrons of sailors."
+  },
+  {
+    "name": "Grus",
+    "latin_genitive": "Gruis",
+    "abbreviation": "Gru",
+    "hemisphere": "southern",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Alnair", "magnitude": 1.74 },
+    "notable_objects": [],
+    "story": "The Crane. A southern constellation introduced in the late 16th century from observations during Dutch voyages."
+  },
+  {
+    "name": "Hercules",
+    "latin_genitive": "Herculis",
+    "abbreviation": "Her",
+    "hemisphere": "northern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Kornephoros", "magnitude": 2.78 },
+    "notable_objects": ["M13 (Great Hercules Cluster)", "M92"],
+    "story": "The Greek hero famed for his Twelve Labors, depicted kneeling in the sky with his foot on the head of Draco."
+  },
+  {
+    "name": "Horologium",
+    "latin_genitive": "Horologii",
+    "abbreviation": "Hor",
+    "hemisphere": "southern",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Alpha Horologii", "magnitude": 3.86 },
+    "notable_objects": [],
+    "story": "The Pendulum Clock. A modern southern constellation introduced by Lacaille in the 18th century to honor the pendulum clock."
+  },
+  {
+    "name": "Hydra",
+    "latin_genitive": "Hydrae",
+    "abbreviation": "Hya",
+    "hemisphere": "equatorial",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Alphard", "magnitude": 1.98 },
+    "notable_objects": ["M48", "M68", "M83 (Southern Pinwheel Galaxy)"],
+    "story": "The Water Snake. The largest constellation, representing the multi-headed Lernaean Hydra slain by Heracles."
+  },
+  {
+    "name": "Hydrus",
+    "latin_genitive": "Hydri",
+    "abbreviation": "Hyi",
+    "hemisphere": "southern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Beta Hydri", "magnitude": 2.80 },
+    "notable_objects": [],
+    "story": "The Lesser Water Snake. A southern constellation introduced by Dutch navigators in the late 16th century."
+  },
+  {
+    "name": "Indus",
+    "latin_genitive": "Indi",
+    "abbreviation": "Ind",
+    "hemisphere": "southern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Alpha Indi", "magnitude": 3.11 },
+    "notable_objects": [],
+    "story": "The Indian. A southern constellation introduced in the late 16th century, depicting an indigenous person of the Americas or Asia."
+  },
+  {
+    "name": "Lacerta",
+    "latin_genitive": "Lacertae",
+    "abbreviation": "Lac",
+    "hemisphere": "northern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Alpha Lacertae", "magnitude": 3.77 },
+    "notable_objects": [],
+    "story": "The Lizard. Introduced by Hevelius in the 17th century to fill a gap between Cygnus and Andromeda."
+  },
+  {
+    "name": "Leo",
+    "latin_genitive": "Leonis",
+    "abbreviation": "Leo",
+    "hemisphere": "equatorial",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Regulus", "magnitude": 1.40 },
+    "notable_objects": ["M65", "M66", "M95", "M96", "M105"],
+    "story": "The Lion. Represents the Nemean Lion slain by Heracles as the first of his Twelve Labors."
+  },
+  {
+    "name": "Leo Minor",
+    "latin_genitive": "Leonis Minoris",
+    "abbreviation": "LMi",
+    "hemisphere": "northern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Praecipua", "magnitude": 3.83 },
+    "notable_objects": [],
+    "story": "The Lesser Lion. Introduced by Hevelius in the 17th century to fill the space between Leo and Ursa Major."
+  },
+  {
+    "name": "Lepus",
+    "latin_genitive": "Leporis",
+    "abbreviation": "Lep",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Arneb", "magnitude": 2.58 },
+    "notable_objects": ["M79"],
+    "story": "The Hare. Located beneath Orion's feet, representing a hare being hunted by Orion and his dogs."
+  },
+  {
+    "name": "Libra",
+    "latin_genitive": "Librae",
+    "abbreviation": "Lib",
+    "hemisphere": "southern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Zubeneschamali", "magnitude": 2.61 },
+    "notable_objects": [],
+    "story": "The Scales. Originally part of Scorpius (its claws), Libra represents the scales of justice held by the goddess Astraea."
+  },
+  {
+    "name": "Lupus",
+    "latin_genitive": "Lupi",
+    "abbreviation": "Lup",
+    "hemisphere": "southern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Alpha Lupi", "magnitude": 2.30 },
+    "notable_objects": [],
+    "story": "The Wolf. An ancient constellation, originally depicted as an unspecified wild beast impaled on the centaur's lance."
+  },
+  {
+    "name": "Lynx",
+    "latin_genitive": "Lyncis",
+    "abbreviation": "Lyn",
+    "hemisphere": "northern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Alpha Lyncis", "magnitude": 3.13 },
+    "notable_objects": [],
+    "story": "The Lynx. Introduced by Hevelius in the 17th century, named because only the lynx-eyed could see its faint stars."
+  },
+  {
+    "name": "Lyra",
+    "latin_genitive": "Lyrae",
+    "abbreviation": "Lyr",
+    "hemisphere": "northern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Vega", "magnitude": 0.03 },
+    "notable_objects": ["M57 (Ring Nebula)", "M56"],
+    "story": "The Lyre. Represents the lyre of Orpheus, the legendary musician of Greek mythology whose music could charm all living things."
+  },
+  {
+    "name": "Mensa",
+    "latin_genitive": "Mensae",
+    "abbreviation": "Men",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Alpha Mensae", "magnitude": 5.09 },
+    "notable_objects": [],
+    "story": "The Table Mountain. A faint southern constellation introduced by Lacaille, named after Table Mountain near Cape Town."
+  },
+  {
+    "name": "Microscopium",
+    "latin_genitive": "Microscopii",
+    "abbreviation": "Mic",
+    "hemisphere": "southern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Gamma Microscopii", "magnitude": 4.67 },
+    "notable_objects": [],
+    "story": "The Microscope. A modern southern constellation introduced by Lacaille in the 18th century to honor scientific instruments."
+  },
+  {
+    "name": "Monoceros",
+    "latin_genitive": "Monocerotis",
+    "abbreviation": "Mon",
+    "hemisphere": "equatorial",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Beta Monocerotis", "magnitude": 3.74 },
+    "notable_objects": ["M50", "NGC 2244 (Rosette Nebula)", "NGC 2264 (Christmas Tree Cluster)"],
+    "story": "The Unicorn. Introduced by Plancius in the 17th century, depicting the legendary one-horned creature."
+  },
+  {
+    "name": "Musca",
+    "latin_genitive": "Muscae",
+    "abbreviation": "Mus",
+    "hemisphere": "southern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Alpha Muscae", "magnitude": 2.69 },
+    "notable_objects": [],
+    "story": "The Fly. A southern constellation introduced by Dutch navigators in the late 16th century, originally called Apis (the Bee)."
+  },
+  {
+    "name": "Norma",
+    "latin_genitive": "Normae",
+    "abbreviation": "Nor",
+    "hemisphere": "southern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Gamma2 Normae", "magnitude": 4.02 },
+    "notable_objects": [],
+    "story": "The Carpenter's Square. A modern southern constellation introduced by Lacaille in the 18th century, representing a draftsman's square."
+  },
+  {
+    "name": "Octans",
+    "latin_genitive": "Octantis",
+    "abbreviation": "Oct",
+    "hemisphere": "southern",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Nu Octantis", "magnitude": 3.73 },
+    "notable_objects": [],
+    "story": "The Octant. Contains the south celestial pole. Introduced by Lacaille in the 18th century, named for the octant navigation instrument."
+  },
+  {
+    "name": "Ophiuchus",
+    "latin_genitive": "Ophiuchi",
+    "abbreviation": "Oph",
+    "hemisphere": "equatorial",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Rasalhague", "magnitude": 2.08 },
+    "notable_objects": ["M9", "M10", "M12", "M14", "M19", "M62", "M107"],
+    "story": "The Serpent Bearer. Often identified with Asclepius, the Greek god of medicine, depicted holding a serpent (Serpens)."
+  },
+  {
+    "name": "Orion",
+    "latin_genitive": "Orionis",
+    "abbreviation": "Ori",
+    "hemisphere": "equatorial",
+    "best_months": ["Dec", "Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Rigel", "magnitude": 0.13 },
+    "notable_objects": ["M42 (Orion Nebula)", "M43", "M78"],
+    "story": "The Hunter, with belt of three stars, one of the most recognizable constellations and a giant huntsman in Greek mythology."
+  },
+  {
+    "name": "Pavo",
+    "latin_genitive": "Pavonis",
+    "abbreviation": "Pav",
+    "hemisphere": "southern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Peacock", "magnitude": 1.94 },
+    "notable_objects": ["NGC 6752"],
+    "story": "The Peacock. A southern constellation introduced in the late 16th century by Dutch navigators."
+  },
+  {
+    "name": "Pegasus",
+    "latin_genitive": "Pegasi",
+    "abbreviation": "Peg",
+    "hemisphere": "northern",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Enif", "magnitude": 2.40 },
+    "notable_objects": ["M15"],
+    "story": "The winged horse of Greek mythology, born from the blood of Medusa and tamed by the hero Bellerophon."
+  },
+  {
+    "name": "Perseus",
+    "latin_genitive": "Persei",
+    "abbreviation": "Per",
+    "hemisphere": "northern",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Mirfak", "magnitude": 1.79 },
+    "notable_objects": ["M34", "NGC 869 (Double Cluster)", "NGC 884 (Double Cluster)"],
+    "story": "The Greek hero who slew Medusa and rescued Andromeda from the sea monster Cetus."
+  },
+  {
+    "name": "Phoenix",
+    "latin_genitive": "Phoenicis",
+    "abbreviation": "Phe",
+    "hemisphere": "southern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Ankaa", "magnitude": 2.40 },
+    "notable_objects": [],
+    "story": "The Phoenix. The mythological bird that rose from its own ashes, introduced by Dutch navigators in the late 16th century."
+  },
+  {
+    "name": "Pictor",
+    "latin_genitive": "Pictoris",
+    "abbreviation": "Pic",
+    "hemisphere": "southern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Alpha Pictoris", "magnitude": 3.27 },
+    "notable_objects": [],
+    "story": "The Painter's Easel. A modern southern constellation introduced by Lacaille in the 18th century."
+  },
+  {
+    "name": "Pisces",
+    "latin_genitive": "Piscium",
+    "abbreviation": "Psc",
+    "hemisphere": "equatorial",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Eta Piscium", "magnitude": 3.62 },
+    "notable_objects": ["M74"],
+    "story": "The Fishes. Represents Aphrodite and Eros transformed into fish to escape the monster Typhon, tied together by a cord."
+  },
+  {
+    "name": "Piscis Austrinus",
+    "latin_genitive": "Piscis Austrini",
+    "abbreviation": "PsA",
+    "hemisphere": "southern",
+    "best_months": ["Aug", "Sep", "Oct"],
+    "brightest_star": { "name": "Fomalhaut", "magnitude": 1.16 },
+    "notable_objects": [],
+    "story": "The Southern Fish. Often depicted drinking the water poured by Aquarius, with Fomalhaut as its prominent eye."
+  },
+  {
+    "name": "Puppis",
+    "latin_genitive": "Puppis",
+    "abbreviation": "Pup",
+    "hemisphere": "southern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Naos", "magnitude": 2.21 },
+    "notable_objects": ["M46", "M47", "M93"],
+    "story": "The Stern. Part of the ancient Argo Navis (the ship of the Argonauts), divided by Lacaille into Carina, Puppis, and Vela."
+  },
+  {
+    "name": "Pyxis",
+    "latin_genitive": "Pyxidis",
+    "abbreviation": "Pyx",
+    "hemisphere": "southern",
+    "best_months": ["Feb", "Mar", "Apr"],
+    "brightest_star": { "name": "Alpha Pyxidis", "magnitude": 3.68 },
+    "notable_objects": [],
+    "story": "The Mariner's Compass. Introduced by Lacaille in the 18th century, representing the magnetic compass used in navigation."
+  },
+  {
+    "name": "Reticulum",
+    "latin_genitive": "Reticuli",
+    "abbreviation": "Ret",
+    "hemisphere": "southern",
+    "best_months": ["Nov", "Dec", "Jan"],
+    "brightest_star": { "name": "Alpha Reticuli", "magnitude": 3.33 },
+    "notable_objects": [],
+    "story": "The Reticle. A modern southern constellation introduced by Lacaille, named for the reticle eyepiece used in his telescope."
+  },
+  {
+    "name": "Sagitta",
+    "latin_genitive": "Sagittae",
+    "abbreviation": "Sge",
+    "hemisphere": "northern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Gamma Sagittae", "magnitude": 3.47 },
+    "notable_objects": ["M71"],
+    "story": "The Arrow. The third-smallest constellation, sometimes identified as one of Heracles' arrows or Cupid's arrow."
+  },
+  {
+    "name": "Sagittarius",
+    "latin_genitive": "Sagittarii",
+    "abbreviation": "Sgr",
+    "hemisphere": "southern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Kaus Australis", "magnitude": 1.85 },
+    "notable_objects": ["M8 (Lagoon Nebula)", "M17 (Omega Nebula)", "M20 (Trifid Nebula)", "M22", "M23", "M24", "M25", "M28", "M54", "M55", "M69", "M70", "M75"],
+    "story": "The Archer. A centaur archer, often identified with Crotus, aiming his bow at Scorpius. Marks the direction of the galactic center."
+  },
+  {
+    "name": "Scorpius",
+    "latin_genitive": "Scorpii",
+    "abbreviation": "Sco",
+    "hemisphere": "southern",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Antares", "magnitude": 1.06 },
+    "notable_objects": ["M4", "M6 (Butterfly Cluster)", "M7 (Ptolemy Cluster)", "M80"],
+    "story": "The Scorpion. The scorpion sent by Gaia (or Artemis) to kill Orion, placed on the opposite side of the sky from him."
+  },
+  {
+    "name": "Sculptor",
+    "latin_genitive": "Sculptoris",
+    "abbreviation": "Scl",
+    "hemisphere": "southern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Alpha Sculptoris", "magnitude": 4.30 },
+    "notable_objects": ["NGC 253 (Sculptor Galaxy)"],
+    "story": "The Sculptor. A modern southern constellation introduced by Lacaille in the 18th century, originally called Apparatus Sculptoris."
+  },
+  {
+    "name": "Scutum",
+    "latin_genitive": "Scuti",
+    "abbreviation": "Sct",
+    "hemisphere": "southern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Alpha Scuti", "magnitude": 3.85 },
+    "notable_objects": ["M11 (Wild Duck Cluster)", "M26"],
+    "story": "The Shield. Introduced by Hevelius in the 17th century to honor John III Sobieski, king of Poland, who won the Battle of Vienna."
+  },
+  {
+    "name": "Serpens",
+    "latin_genitive": "Serpentis",
+    "abbreviation": "Ser",
+    "hemisphere": "equatorial",
+    "best_months": ["Jun", "Jul", "Aug"],
+    "brightest_star": { "name": "Unukalhai", "magnitude": 2.63 },
+    "notable_objects": ["M5", "M16 (Eagle Nebula)"],
+    "story": "The Serpent. The only constellation divided into two parts (Caput and Cauda), held by Ophiuchus the Serpent Bearer."
+  },
+  {
+    "name": "Sextans",
+    "latin_genitive": "Sextantis",
+    "abbreviation": "Sex",
+    "hemisphere": "equatorial",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Alpha Sextantis", "magnitude": 4.49 },
+    "notable_objects": [],
+    "story": "The Sextant. Introduced by Hevelius in the 17th century to commemorate his sextant, lost in a fire at his observatory."
+  },
+  {
+    "name": "Taurus",
+    "latin_genitive": "Tauri",
+    "abbreviation": "Tau",
+    "hemisphere": "northern",
+    "best_months": ["Dec", "Jan", "Feb"],
+    "brightest_star": { "name": "Aldebaran", "magnitude": 0.86 },
+    "notable_objects": ["M1 (Crab Nebula)", "M45 (Pleiades)", "Hyades"],
+    "story": "The Bull. Represents Zeus disguised as a bull to abduct Europa, or the Cretan Bull captured by Heracles."
+  },
+  {
+    "name": "Telescopium",
+    "latin_genitive": "Telescopii",
+    "abbreviation": "Tel",
+    "hemisphere": "southern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Alpha Telescopii", "magnitude": 3.49 },
+    "notable_objects": [],
+    "story": "The Telescope. A modern southern constellation introduced by Lacaille in the 18th century to honor the telescope."
+  },
+  {
+    "name": "Triangulum",
+    "latin_genitive": "Trianguli",
+    "abbreviation": "Tri",
+    "hemisphere": "northern",
+    "best_months": ["Oct", "Nov", "Dec"],
+    "brightest_star": { "name": "Beta Trianguli", "magnitude": 3.00 },
+    "notable_objects": ["M33 (Triangulum Galaxy)"],
+    "story": "The Triangle. A small ancient constellation whose three stars form a clear triangle, recognized since Greek antiquity."
+  },
+  {
+    "name": "Triangulum Australe",
+    "latin_genitive": "Trianguli Australis",
+    "abbreviation": "TrA",
+    "hemisphere": "southern",
+    "best_months": ["May", "Jun", "Jul"],
+    "brightest_star": { "name": "Atria", "magnitude": 1.91 },
+    "notable_objects": [],
+    "story": "The Southern Triangle. A southern counterpart to Triangulum, introduced in the late 16th century by Dutch navigators."
+  },
+  {
+    "name": "Tucana",
+    "latin_genitive": "Tucanae",
+    "abbreviation": "Tuc",
+    "hemisphere": "southern",
+    "best_months": ["Sep", "Oct", "Nov"],
+    "brightest_star": { "name": "Alpha Tucanae", "magnitude": 2.87 },
+    "notable_objects": ["Small Magellanic Cloud", "47 Tucanae (NGC 104)"],
+    "story": "The Toucan. A southern constellation introduced in the late 16th century from observations during Dutch voyages."
+  },
+  {
+    "name": "Ursa Major",
+    "latin_genitive": "Ursae Majoris",
+    "abbreviation": "UMa",
+    "hemisphere": "northern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Alioth", "magnitude": 1.77 },
+    "notable_objects": ["M81 (Bode's Galaxy)", "M82 (Cigar Galaxy)", "M97 (Owl Nebula)", "M101 (Pinwheel Galaxy)", "M108", "M109"],
+    "story": "The Great Bear. Contains the Big Dipper asterism. In Greek mythology, the nymph Callisto was transformed into a bear by Hera."
+  },
+  {
+    "name": "Ursa Minor",
+    "latin_genitive": "Ursae Minoris",
+    "abbreviation": "UMi",
+    "hemisphere": "northern",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Polaris", "magnitude": 1.98 },
+    "notable_objects": [],
+    "story": "The Lesser Bear. Contains Polaris, the North Star. In Greek mythology, identified as Arcas, the son of Callisto."
+  },
+  {
+    "name": "Vela",
+    "latin_genitive": "Velorum",
+    "abbreviation": "Vel",
+    "hemisphere": "southern",
+    "best_months": ["Mar", "Apr", "May"],
+    "brightest_star": { "name": "Suhail al Muhlif", "magnitude": 1.83 },
+    "notable_objects": ["IC 2391"],
+    "story": "The Sails. Part of the ancient Argo Navis (the ship of the Argonauts), divided by Lacaille into Carina, Puppis, and Vela."
+  },
+  {
+    "name": "Virgo",
+    "latin_genitive": "Virginis",
+    "abbreviation": "Vir",
+    "hemisphere": "equatorial",
+    "best_months": ["Apr", "May", "Jun"],
+    "brightest_star": { "name": "Spica", "magnitude": 0.97 },
+    "notable_objects": ["M49", "M58", "M59", "M60", "M61", "M84", "M86", "M87", "M89", "M90", "M104 (Sombrero Galaxy)"],
+    "story": "The Maiden. Often identified with Astraea, goddess of justice, or with Demeter, the Greek goddess of the harvest."
+  },
+  {
+    "name": "Volans",
+    "latin_genitive": "Volantis",
+    "abbreviation": "Vol",
+    "hemisphere": "southern",
+    "best_months": ["Jan", "Feb", "Mar"],
+    "brightest_star": { "name": "Beta Volantis", "magnitude": 3.77 },
+    "notable_objects": [],
+    "story": "The Flying Fish. A southern constellation introduced in the late 16th century from observations during Dutch voyages."
+  },
+  {
+    "name": "Vulpecula",
+    "latin_genitive": "Vulpeculae",
+    "abbreviation": "Vul",
+    "hemisphere": "northern",
+    "best_months": ["Jul", "Aug", "Sep"],
+    "brightest_star": { "name": "Anser", "magnitude": 4.44 },
+    "notable_objects": ["M27 (Dumbbell Nebula)"],
+    "story": "The Little Fox. Introduced by Hevelius in the 17th century, originally named Vulpecula cum Ansere (the little fox with the goose)."
+  }
+]
