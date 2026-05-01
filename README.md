@@ -2,7 +2,7 @@
 
 A Model Context Protocol (MCP) server for personal astronomy. Ask any MCP-compatible host (Claude Code, Claude Desktop, Cursor) "what's visible from my backyard tonight" or "when does the ISS pass over Gandhinagar" and get real, computed answers.
 
-This repo is also a learning project. The code is intentionally small (~500 lines) and structured so reading it is the fastest path to understanding MCP end-to-end.
+This repo is also a learning project, structured so reading it is the fastest path to understanding MCP end-to-end.
 
 ## What this server can do
 
@@ -17,7 +17,7 @@ Six tools — four pure-compute (real ephemeris math, no LLM guessing), two back
 | `log_observation` | Records an observation (target, lat/lon, optional time, notes, seeing/transparency 1–5, equipment) in a local SQLite log |
 | `recall_log` | Searches the observation log by target substring, date range, and minimum seeing — newest first |
 
-Two MCP **Resources** are also exposed (read-only catalog data the LLM can browse):
+Four MCP **Resources** are also exposed — two fixed-URI catalogs and two URI-templated detail resources (read-only data the LLM can browse):
 
 | Resource | Returns |
 |---|---|
@@ -232,7 +232,7 @@ You'll see three replies: the initialize handshake, the `prompts/list` result (t
 
 **Tools vs. Resources vs. Prompts — when to use which?** Tools = computation. Resources = data. Prompts = workflows. A Prompt is the only one of the three that the *user* invokes directly; the other two are invoked by the LLM in service of whatever conversation the user is having.
 
-### 4.8 `src/lib/observation-log.ts` — your first stateful primitive
+### 4.8 `src/lib/observation-log.ts` — your first stateful tool
 
 Every prior tool was pure compute. This one is the first that *remembers*: `log_observation` writes a row, `recall_log` reads it back, and the rows survive across MCP sessions because they live in a SQLite file on disk.
 
