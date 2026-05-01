@@ -53,6 +53,8 @@ export interface Constellation {
 
 export type DeepSkyTypeFilter = "galaxy" | "nebula" | "cluster";
 
+// Note: double_star and asterism types are intentionally not in any filter bucket — they
+// appear in unfiltered queries but cannot be selected via DeepSkyTypeFilter.
 const TYPE_FILTER_MAP: Record<DeepSkyTypeFilter, MessierType[]> = {
   galaxy: ["galaxy", "spiral_galaxy", "elliptical_galaxy"],
   nebula: ["nebula", "planetary_nebula", "supernova_remnant"],
@@ -83,4 +85,11 @@ export function filterMessierByType(
 ): MessierObject[] {
   const allowed = TYPE_FILTER_MAP[filter];
   return objects.filter((o) => allowed.includes(o.type));
+}
+
+export function filterMessier(
+  objects: MessierObject[],
+  predicate: (obj: MessierObject) => boolean,
+): MessierObject[] {
+  return objects.filter(predicate);
 }

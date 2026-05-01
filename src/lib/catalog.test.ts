@@ -6,6 +6,7 @@ import {
   findMessier,
   findConstellation,
   filterMessierByType,
+  filterMessier,
   type DeepSkyTypeFilter,
 } from "./catalog.js";
 
@@ -100,4 +101,12 @@ test("filterMessierByType cluster includes open and globular", () => {
   // M45 (Pleiades) is open, M3 is globular — both must appear
   assert.ok(clusters.some((c) => c.id === "M45"));
   assert.ok(clusters.some((c) => c.id === "M3"));
+});
+
+test("filterMessier applies arbitrary predicate", () => {
+  const objs = loadMessier();
+  const bright = filterMessier(objs, (o) => o.magnitude <= 5);
+  // M45 (Pleiades, mag 1.6) should make the cut; M1 (mag 8.4) should not.
+  assert.ok(bright.some((o) => o.id === "M45"));
+  assert.ok(!bright.some((o) => o.id === "M1"));
 });
