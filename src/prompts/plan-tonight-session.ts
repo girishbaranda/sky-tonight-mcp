@@ -24,8 +24,9 @@ export function buildPlanTonightSessionBody(args: PlanTonightSessionArgs): strin
   const validationLine = isValidLevel
     ? ""
     : `NOTE: skill_level must be one of: ${ALLOWED_LEVELS.join(", ")}. The user provided: "${args.skill_level}". Ask the user to clarify or proceed assuming intermediate.\n\n`;
+  const article = /^[aeiou]/i.test(args.skill_level) ? "an" : "a";
 
-  return `${validationLine}You are helping plan a ${args.duration_min}-minute backyard observing session for a ${args.skill_level} observer.
+  return `${validationLine}You are helping plan a ${args.duration_min}-minute backyard observing session for ${article} ${args.skill_level} observer.
 
 **Step 1 — Location.** If you don't already know the user's latitude/longitude, ask before doing anything else. All tools below require it.
 

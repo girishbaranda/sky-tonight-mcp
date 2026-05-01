@@ -34,3 +34,15 @@ test("buildPlanTonightSessionBody does NOT prepend a validation note for valid s
     assert.ok(!body.startsWith("NOTE:"), `valid level "${level}" should not produce a NOTE prefix`);
   }
 });
+
+test("buildPlanTonightSessionBody picks the correct article (a/an) for the skill_level", () => {
+  // Vowel-initial levels need "an", consonant-initial need "a".
+  const beginner = buildPlanTonightSessionBody({ duration_min: "60", skill_level: "beginner" });
+  assert.ok(beginner.includes("for a beginner observer"), "beginner should use 'a'");
+
+  const intermediate = buildPlanTonightSessionBody({ duration_min: "60", skill_level: "intermediate" });
+  assert.ok(intermediate.includes("for an intermediate observer"), "intermediate should use 'an'");
+
+  const advanced = buildPlanTonightSessionBody({ duration_min: "60", skill_level: "advanced" });
+  assert.ok(advanced.includes("for an advanced observer"), "advanced should use 'an'");
+});
