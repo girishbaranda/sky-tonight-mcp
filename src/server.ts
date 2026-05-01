@@ -21,6 +21,7 @@ import { registerIssPasses } from "./tools/iss-passes.js";
 import { registerMoonPhase } from "./tools/moon-phase.js";
 import { registerDeepSkyVisible } from "./tools/deep-sky-visible.js";
 import { registerLogObservation } from "./tools/log-observation.js";
+import { registerRecallLog } from "./tools/recall-log.js";
 
 import { registerMessierResources } from "./resources/messier.js";
 import { registerConstellationResources } from "./resources/constellations.js";
@@ -40,6 +41,7 @@ registerIssPasses(server);
 registerMoonPhase(server);
 registerDeepSkyVisible(server);
 registerLogObservation(server);
+registerRecallLog(server);
 
 // Resources
 registerMessierResources(server);
