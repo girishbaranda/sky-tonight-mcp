@@ -17,7 +17,7 @@ Three tools, all powered by real ephemeris math (no hand-waving, no LLM guessing
 ## Quickstart
 
 ```bash
-git clone <your-repo-url> sky-tonight
+git clone git@github.com:girishbaranda/sky-tonight-mcp.git sky-tonight
 cd sky-tonight
 npm install
 npm run typecheck     # should be clean
