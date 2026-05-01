@@ -106,26 +106,17 @@ The log is per-machine for now; multi-user / remote storage is on the roadmap (v
 
 Read the files in this order — each layer adds one concept.
 
-### 1. `src/server.ts` — the entry point (~45 lines)
+### 1. `src/server.ts` — the entry point (~20 lines)
 
-This file shows the entire shape of an MCP server in 4 statements:
+This file shows the entire shape of an MCP server in 3 statements:
 
 ```ts
-const server = new McpServer({ name, version });   // (1) advertise identity
-registerObjectsVisible(server);                    // (2) attach capabilities (tools)
-registerIssPasses(server);
-registerMoonPhase(server);
-registerDeepSkyVisible(server);
-registerMessierResources(server);                  //     ... and resources
-registerConstellationResources(server);
-registerPlanTonightSession(server);                //     ... and prompts
-registerIdentifyObject(server);
-registerTourConstellation(server);
-const transport = new StdioServerTransport();      // (3) pick transport
-await server.connect(transport);                   // (4) start the protocol loop
+const server = createMcpServer();                  // (1) build the McpServer with all tools/resources/prompts
+const transport = new StdioServerTransport();      // (2) pick transport
+await server.connect(transport);                   // (3) start the protocol loop
 ```
 
-That's the whole MCP server lifecycle. The `McpServer` is your high-level handle; transports are pluggable (stdio for local subprocess, streamable HTTP for remote — same `server` object, different transport).
+That's the whole MCP server lifecycle. The `McpServer` is your high-level handle; transports are pluggable (stdio for local subprocess, streamable HTTP for remote — same `server` object, different transport). v0.5 added the HTTP transport in `src/http.ts`, which calls the same `createMcpServer()` factory; see §4.9 for that walk-through. The eleven `register*()` calls now live in `src/lib/mcp-server.ts`.
 
 **Key idea: stdio.** When you run the server via `npx tsx src/server.ts`, the MCP host (Claude Code) spawns this process and treats its stdin/stdout as the communication channel. Every line is a JSON-RPC 2.0 frame. Don't `console.log` — that pollutes the protocol. Use `console.error` for diagnostics; stderr is safe.
 
@@ -282,7 +273,7 @@ The refactor is one new file:
 ```ts
 // src/lib/mcp-server.ts
 export function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "sky-tonight", version: "0.4.0" });
+  const server = new McpServer({ name: "sky-tonight", version: "0.5.0" });
   registerObjectsVisible(server);
   // ...all eleven register*() calls...
   return server;
@@ -346,48 +337,51 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 ## Architecture diagram
 
 ```
-                ┌─────────────────────┐
-                │  Host (Claude Code) │
-                │  - decides when to  │
-                │    call which tool  │
-                │  - reads resources  │
-                └──────────┬──────────┘
-                           │ spawns subprocess
-                           │ stdin/stdout = JSON-RPC 2.0
-                           ▼
-   ┌─────────────────────────────────────────────────────┐
-   │  Sky Tonight MCP Server (this repo)                 │
-   │                                                     │
-   │   server.ts ──► McpServer + stdio transport         │
-   │                                                     │
-   │   tools/                                            │
-   │   ├── objects-visible.ts ──┐                        │
-   │   ├── iss-passes.ts ───────┤                        │
-   │   ├── moon-phase.ts ───────┤                        │
-   │   ├── deep-sky-visible.ts ─┼──► registerTool()      │
-   │   ├── log-observation.ts ──┤                        │
-   │   └── recall-log.ts ───────┘                        │
-   │                                                     │
-   │   resources/                                        │
-   │   ├── messier.ts ──────────┐                        │
-   │   └── constellations.ts ───┴──► registerResource()  │
-   │                                                     │
-   │   prompts/                                          │
-   │   ├── plan-tonight-session.ts ┐                     │
-   │   ├── identify-object.ts ─────┼──► registerPrompt() │
-   │   └── tour-constellation.ts ──┘                     │
-   │                                                     │
-   │   data/                                             │
-   │   ├── messier.json (110 objects)                    │
-   │   └── constellations.json (88 entries)              │
-   │                                                     │
-   │   lib/                                              │
-   │   ├── astronomy.ts ────────► astronomy-engine       │
-   │   ├── satellites.ts ──────► satellite.js + fetch    │
-   │   ├── catalog.ts ─────────► loads + filters JSON    │
-   │   └── observation-log.ts ─► better-sqlite3          │
-   │                          │              │           │
-   └──────────────────────────┼──────────────┼───────────┘
+                ┌─────────────────────┐         ┌────────────────────┐
+                │  Host (Claude Code) │         │  HTTP client (curl,│
+                │  - decides when to  │         │  remote MCP host)  │
+                │    call which tool  │         └─────────┬──────────┘
+                │  - reads resources  │                   │ POST /mcp
+                └──────────┬──────────┘                   │ JSON-RPC 2.0
+                           │ spawns subprocess            │ over HTTP
+                           │ stdin/stdout = JSON-RPC 2.0  │
+                           ▼                              ▼
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  Sky Tonight MCP Server (this repo)                             │
+   │                                                                 │
+   │   server.ts (stdio) ──┐         ┌── http.ts (Streamable HTTP)   │
+   │                       ▼         ▼                               │
+   │             lib/mcp-server.ts → createMcpServer()               │
+   │                       │                                         │
+   │                       ▼                                         │
+   │   tools/                                                        │
+   │   ├── objects-visible.ts ──┐                                    │
+   │   ├── iss-passes.ts ───────┤                                    │
+   │   ├── moon-phase.ts ───────┤                                    │
+   │   ├── deep-sky-visible.ts ─┼──► registerTool()                  │
+   │   ├── log-observation.ts ──┤                                    │
+   │   └── recall-log.ts ───────┘                                    │
+   │                                                                 │
+   │   resources/                                                    │
+   │   ├── messier.ts ──────────┐                                    │
+   │   └── constellations.ts ───┴──► registerResource()              │
+   │                                                                 │
+   │   prompts/                                                      │
+   │   ├── plan-tonight-session.ts ┐                                 │
+   │   ├── identify-object.ts ─────┼──► registerPrompt()             │
+   │   └── tour-constellation.ts ──┘                                 │
+   │                                                                 │
+   │   data/                                                         │
+   │   ├── messier.json (110 objects)                                │
+   │   └── constellations.json (88 entries)                          │
+   │                                                                 │
+   │   lib/                                                          │
+   │   ├── astronomy.ts ────────► astronomy-engine                   │
+   │   ├── satellites.ts ──────► satellite.js + fetch                │
+   │   ├── catalog.ts ─────────► loads + filters JSON                │
+   │   └── observation-log.ts ─► better-sqlite3                      │
+   │                          │              │                       │
+   └──────────────────────────┼──────────────┼───────────────────────┘
                               ▼              ▼
                      celestrak.org    ~/.sky-tonight/
                        (TLE data)     observations.db
