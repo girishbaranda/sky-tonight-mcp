@@ -4,7 +4,7 @@
  *
  * This is the entry point. It does three things:
  *   1. Constructs an McpServer with name+version (advertised to clients on connect).
- *   2. Registers each tool (we delegate to per-file `register*` functions for clarity).
+ *   2. Registers each tool and resource (we delegate to per-file `register*` functions for clarity).
  *   3. Connects the server to a stdio transport — meaning the MCP host (Claude Code,
  *      Claude Desktop, etc.) will spawn this process and talk to it over stdin/stdout
  *      using JSON-RPC 2.0 framed messages.
@@ -18,15 +18,25 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerObjectsVisible } from "./tools/objects-visible.js";
 import { registerIssPasses } from "./tools/iss-passes.js";
 import { registerMoonPhase } from "./tools/moon-phase.js";
+import { registerDeepSkyVisible } from "./tools/deep-sky-visible.js";
+
+import { registerMessierResources } from "./resources/messier.js";
+import { registerConstellationResources } from "./resources/constellations.js";
 
 const server = new McpServer({
   name: "sky-tonight",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
+// Tools
 registerObjectsVisible(server);
 registerIssPasses(server);
 registerMoonPhase(server);
+registerDeepSkyVisible(server);
+
+// Resources
+registerMessierResources(server);
+registerConstellationResources(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
