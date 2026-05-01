@@ -55,6 +55,9 @@ async function postMcp(body: unknown): Promise<{ status: number; json: any; text
     const dataLine = text.split("\n").find((l) => l.startsWith("data: "));
     if (dataLine) json = JSON.parse(dataLine.slice(6));
   }
+  if (json === null) {
+    throw new Error(`postMcp: could not parse response body as JSON or SSE.\nstatus=${res.status}\nbody:\n${text}`);
+  }
   return { status: res.status, json, text };
 }
 
