@@ -64,6 +64,34 @@ Or invoke a prompt template directly:
 /sky-tonight:tour_constellation name=Orion
 ```
 
+## Running over HTTP
+
+v0.5 added a Streamable HTTP transport. Same eleven tools, same factory in `src/lib/mcp-server.ts`, different framing.
+
+```bash
+npm run dev:http               # tsx src/http.ts
+# sky-tonight http on http://127.0.0.1:3000/mcp
+```
+
+Try it with curl:
+
+```bash
+curl -s -X POST http://127.0.0.1:3000/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+Config (env vars):
+
+| Var | Default | Notes |
+|---|---|---|
+| `PORT` | `3000` | Server bind port. |
+| `HOST` | `127.0.0.1` | Server bind host. Set `0.0.0.0` to expose externally. |
+| `SKY_TONIGHT_DB` | `~/.sky-tonight/observations.db` | Same as v0.4. |
+
+> **No auth in v0.5.** Real auth is v0.6 (OAuth 2.1). Until then, keep the server bound to `127.0.0.1` and reach it via `ssh -L`, a Cloudflare/ngrok tunnel, or a reverse proxy that you control. Setting `HOST=0.0.0.0` on a public network gives anyone with a route to the port full read/write access to your observation log.
+
 ## Persistence
 
 `log_observation` and `recall_log` are backed by a local SQLite database. By default it lives at `~/.sky-tonight/observations.db` — created on first write. Override the location with `SKY_TONIGHT_DB`:
@@ -245,6 +273,60 @@ Two design choices worth noting:
 
 The lesson: a stateful MCP tool is not architecturally different from a stateless one. The wire protocol is identical; the host doesn't know or care that one of these tools persists data. Statefulness is purely an implementation detail behind the tool's `description` contract.
 
+### 4.9 `src/http.ts` — your first non-stdio transport
+
+Up to this point everything ran over stdio: the host spawned the process, framed JSON-RPC over stdin/stdout, and that was the whole transport. v0.5 adds a second entry point — a Streamable HTTP server — without changing a single tool, resource, or prompt. The lesson: in MCP the transport is genuinely pluggable. Same `McpServer`, same `register*()` calls, different framing.
+
+The refactor is one new file:
+
+```ts
+// src/lib/mcp-server.ts
+export function createMcpServer(): McpServer {
+  const server = new McpServer({ name: "sky-tonight", version: "0.4.0" });
+  registerObjectsVisible(server);
+  // ...all eleven register*() calls...
+  return server;
+}
+```
+
+Both `src/server.ts` (stdio) and `src/http.ts` (HTTP) call this factory. The eleven registrations now live in exactly one place.
+
+The HTTP entry is stateless. Three things to notice:
+
+```ts
+// src/http.ts (sketch)
+const httpServer = http.createServer(async (req, res) => {
+  if (req.url !== "/mcp") return res.writeHead(404).end();
+  if (req.method !== "POST") return res.writeHead(405, { Allow: "POST" }).end();
+  const server = createMcpServer();                                          // (1)
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,                                           // (2)
+  });
+  await server.connect(transport);
+  await transport.handleRequest(req, res);                                   // (3)
+});
+```
+
+(1) **Fresh server + fresh transport per request.** Two concurrent `tools/call` invocations have isolated handler state. This is what stateless mode means in practice.
+
+(2) **`sessionIdGenerator: undefined`.** That's the SDK's signal for "stateless: no `Mcp-Session-Id` header, no SSE GET endpoint." Our tools have no notifications, no progress updates, no streamed responses — there's nothing for a session to hold.
+
+(3) **`handleRequest(req, res)` does everything.** It parses the JSON-RPC frame, dispatches to the McpServer, and writes the reply (either as JSON or SSE-framed JSON depending on the `Accept` header the client sent).
+
+Try it:
+
+```bash
+npm run dev:http &
+curl -s -X POST http://127.0.0.1:3000/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"moon_phase","arguments":{}}}'
+```
+
+The reply you get back is the same shape you'd get from the stdio server — because it *is* the same server. The transport changed; nothing else did.
+
+What this version does NOT add: authentication, sessions, deploy recipes. v0.6 brings OAuth 2.1 and per-user data scoping; v0.7 publishes to the registry. Until then, keep `HOST=127.0.0.1` and reach the server via a tunnel.
+
 ### 5. The wire protocol — see it for yourself
 
 Run this in one terminal to manually drive the server with raw JSON-RPC:
@@ -321,7 +403,7 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 
 **v0.4 ✅** Persistent observation log — `log_observation` and `recall_log` tools backed by a local SQLite database. The server is *stateful* now: rows survive across MCP sessions. The lib (`src/lib/observation-log.ts`) is the only place SQL lives, so the future Postgres swap is mechanical.
 
-**v0.5 — Streamable HTTP transport.** Move from stdio to HTTP so the server can run remotely (Cloudflare Workers, fly.io). Same tool code; one new transport. This unlocks multi-device use.
+**v0.5 ✅** Streamable HTTP transport — `src/http.ts` adds a stateless `POST /mcp` entry behind the same `createMcpServer()` factory the stdio entry uses. No auth, no sessions; bind defaults to `127.0.0.1` because v0.6 owns auth. The server now runs as a long-lived process any MCP host (or curl) can talk to.
 
 **v0.6 — OAuth 2.1.** Required for multi-user remote servers. Personal data (your observation log) gets per-user scoping; public catalogs stay public.
 
