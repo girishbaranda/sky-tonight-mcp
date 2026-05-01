@@ -20,6 +20,8 @@ import { registerObjectsVisible } from "./tools/objects-visible.js";
 import { registerIssPasses } from "./tools/iss-passes.js";
 import { registerMoonPhase } from "./tools/moon-phase.js";
 import { registerDeepSkyVisible } from "./tools/deep-sky-visible.js";
+import { registerLogObservation } from "./tools/log-observation.js";
+import { registerRecallLog } from "./tools/recall-log.js";
 
 import { registerMessierResources } from "./resources/messier.js";
 import { registerConstellationResources } from "./resources/constellations.js";
@@ -30,7 +32,7 @@ import { registerTourConstellation } from "./prompts/tour-constellation.js";
 
 const server = new McpServer({
   name: "sky-tonight",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 // Tools
@@ -38,6 +40,8 @@ registerObjectsVisible(server);
 registerIssPasses(server);
 registerMoonPhase(server);
 registerDeepSkyVisible(server);
+registerLogObservation(server);
+registerRecallLog(server);
 
 // Resources
 registerMessierResources(server);

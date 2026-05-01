@@ -2,11 +2,11 @@
 
 A Model Context Protocol (MCP) server for personal astronomy. Ask any MCP-compatible host (Claude Code, Claude Desktop, Cursor) "what's visible from my backyard tonight" or "when does the ISS pass over Gandhinagar" and get real, computed answers.
 
-This repo is also a learning project. The code is intentionally small (~500 lines) and structured so reading it is the fastest path to understanding MCP end-to-end.
+This repo is also a learning project, structured so reading it is the fastest path to understanding MCP end-to-end.
 
 ## What this server can do
 
-Four tools, all powered by real ephemeris math (no hand-waving, no LLM guessing):
+Six tools — four pure-compute (real ephemeris math, no LLM guessing), two backed by a local SQLite log of your observations:
 
 | Tool | Returns |
 |---|---|
@@ -14,8 +14,10 @@ Four tools, all powered by real ephemeris math (no hand-waving, no LLM guessing)
 | `deep_sky_visible_tonight` | Messier objects (galaxies, nebulae, clusters) visible tonight from your location, filtered by magnitude and type, ranked by peak altitude |
 | `iss_passes` | Upcoming ISS passes from your location with start/peak/end times and rise/set directions |
 | `moon_phase` | Current phase, illumination %, magnitude, and dates of next New/First Quarter/Full/Last Quarter |
+| `log_observation` | Records an observation (target, lat/lon, optional time, notes, seeing/transparency 1–5, equipment) in a local SQLite log |
+| `recall_log` | Searches the observation log by target substring, date range, and minimum seeing — newest first |
 
-Two MCP **Resources** are also exposed (read-only catalog data the LLM can browse):
+Four MCP **Resources** are also exposed — two fixed-URI catalogs and two URI-templated detail resources (read-only data the LLM can browse):
 
 | Resource | Returns |
 |---|---|
@@ -48,7 +50,7 @@ Wire it into Claude Code:
 claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
 ```
 
-Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with four tools and three prompts. Now ask:
+Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with six tools and three prompts. Now ask:
 
 > "I'm at 23.2156, 72.6369 — what's visible tonight above 20 degrees?"
 > "When's the next ISS pass over Gandhinagar in the next 3 days?"
@@ -61,6 +63,16 @@ Or invoke a prompt template directly:
 /sky-tonight:identify_object description="bright dot low in the southwest at 9pm"
 /sky-tonight:tour_constellation name=Orion
 ```
+
+## Persistence
+
+`log_observation` and `recall_log` are backed by a local SQLite database. By default it lives at `~/.sky-tonight/observations.db` — created on first write. Override the location with `SKY_TONIGHT_DB`:
+
+```bash
+SKY_TONIGHT_DB=/path/to/your.db claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
+```
+
+The log is per-machine for now; multi-user / remote storage is on the roadmap (v0.6 OAuth). Use `SKY_TONIGHT_DB=":memory:"` for an ephemeral, in-process database — useful for tests and the smoke script.
 
 ## Reading this codebase as an MCP tutorial
 
@@ -220,6 +232,19 @@ You'll see three replies: the initialize handshake, the `prompts/list` result (t
 
 **Tools vs. Resources vs. Prompts — when to use which?** Tools = computation. Resources = data. Prompts = workflows. A Prompt is the only one of the three that the *user* invokes directly; the other two are invoked by the LLM in service of whatever conversation the user is having.
 
+### 4.8 `src/lib/observation-log.ts` — your first stateful tool
+
+Every prior tool was pure compute. This one is the first that *remembers*: `log_observation` writes a row, `recall_log` reads it back, and the rows survive across MCP sessions because they live in a SQLite file on disk.
+
+The lib is the only file that imports `better-sqlite3` or contains SQL. Both tools call into it through a small typed surface — `logObservation(input)`, `recallObservations(filters)` — and never see a `Database` handle. That boundary is deliberate: when v0.5/v0.6 brings remote storage, the swap is "rewrite the lib internals, leave callers alone." The cost of an abstraction layer (a repository interface, an ORM) would not buy us anything we don't get from the boundary already.
+
+Two design choices worth noting:
+
+- **`id INTEGER PRIMARY KEY`, no `AUTOINCREMENT`** — gets rowid semantics in SQLite and translates mechanically to `BIGSERIAL` / `GENERATED ALWAYS AS IDENTITY` when the lib gets a Postgres backend.
+- **`created_at` is computed in JS** (`new Date().toISOString()` passed as a parameter), not via a SQLite-only `DEFAULT (strftime(...))`. Schema stays portable.
+
+The lesson: a stateful MCP tool is not architecturally different from a stateless one. The wire protocol is identical; the host doesn't know or care that one of these tools persists data. Statefulness is purely an implementation detail behind the tool's `description` contract.
+
 ### 5. The wire protocol — see it for yourself
 
 Run this in one terminal to manually drive the server with raw JSON-RPC:
@@ -234,7 +259,7 @@ Run this in one terminal to manually drive the server with raw JSON-RPC:
 ) | npx tsx src/server.ts
 ```
 
-You'll see three JSON responses: the `initialize` reply (capability negotiation), the `tools/list` reply (your four tools with their schemas), and the `tools/call` reply (the moon phase). That's the entire protocol you'll ever interact with at the wire level.
+You'll see three JSON responses: the `initialize` reply (capability negotiation), the `tools/list` reply (your six tools with their schemas), and the `tools/call` reply (the moon phase). That's the entire protocol you'll ever interact with at the wire level.
 
 ## Architecture diagram
 
@@ -256,8 +281,10 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
    │   tools/                                            │
    │   ├── objects-visible.ts ──┐                        │
    │   ├── iss-passes.ts ───────┤                        │
-   │   ├── moon-phase.ts ───────┼──► registerTool()      │
-   │   └── deep-sky-visible.ts ─┘                        │
+   │   ├── moon-phase.ts ───────┤                        │
+   │   ├── deep-sky-visible.ts ─┼──► registerTool()      │
+   │   ├── log-observation.ts ──┤                        │
+   │   └── recall-log.ts ───────┘                        │
    │                                                     │
    │   resources/                                        │
    │   ├── messier.ts ──────────┐                        │
@@ -273,13 +300,15 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
    │   └── constellations.json (88 entries)              │
    │                                                     │
    │   lib/                                              │
-   │   ├── astronomy.ts ──► astronomy-engine             │
-   │   ├── satellites.ts ─► satellite.js + fetch         │
-   │   └── catalog.ts ────► loads + filters JSON         │
-   │                          │                          │
-   └──────────────────────────┼──────────────────────────┘
-                              ▼
-                     celestrak.org (TLE data)
+   │   ├── astronomy.ts ────────► astronomy-engine       │
+   │   ├── satellites.ts ──────► satellite.js + fetch    │
+   │   ├── catalog.ts ─────────► loads + filters JSON    │
+   │   └── observation-log.ts ─► better-sqlite3          │
+   │                          │              │           │
+   └──────────────────────────┼──────────────┼───────────┘
+                              ▼              ▼
+                     celestrak.org    ~/.sky-tonight/
+                       (TLE data)     observations.db
 ```
 
 ## Roadmap — how this becomes a real, remote MCP
@@ -290,7 +319,7 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 
 **v0.3 ✅** Prompts primitive — three prompt templates (`plan_tonight_session`, `identify_object`, `tour_constellation`) that compose the tools and resources into slash-invocable workflows. Third MCP primitive done.
 
-**v0.4 — Persistent observation log.** Add `log_observation` and `recall_log` tools backed by SQLite. Now the server is *stateful* — meaningful for any real-world MCP.
+**v0.4 ✅** Persistent observation log — `log_observation` and `recall_log` tools backed by a local SQLite database. The server is *stateful* now: rows survive across MCP sessions. The lib (`src/lib/observation-log.ts`) is the only place SQL lives, so the future Postgres swap is mechanical.
 
 **v0.5 — Streamable HTTP transport.** Move from stdio to HTTP so the server can run remotely (Cloudflare Workers, fly.io). Same tool code; one new transport. This unlocks multi-device use.
 

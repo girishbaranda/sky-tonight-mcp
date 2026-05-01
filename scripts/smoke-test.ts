@@ -70,6 +70,32 @@ if (!ori || ori.name !== "Orion" || ori.brightest_star.name !== "Rigel") {
   process.exit(1);
 }
 
+console.log("\n=== Observation log roundtrip (in-memory) ===");
+{
+  const { _resetForTest, _closeForTest, logObservation, recallObservations } =
+    await import("../src/lib/observation-log.js");
+  _resetForTest(":memory:");
+  const written = logObservation({
+    target: "Jupiter",
+    latitude: 23.21,
+    longitude: 72.63,
+    seeing: 4,
+    equipment: '8" Dob',
+  });
+  console.log(`logged: #${written.id} ${written.target} at ${written.observedAt}`);
+  if (written.id !== 1) {
+    console.error("expected id=1 on first insert");
+    process.exit(1);
+  }
+  const read = recallObservations({ target: "jup" });
+  console.log(`recalled: ${read.length} row(s)`);
+  if (read.length !== 1 || read[0].target !== "Jupiter" || read[0].seeing !== 4) {
+    console.error(`unexpected recall result: ${JSON.stringify(read)}`);
+    process.exit(1);
+  }
+  _closeForTest();
+}
+
 console.log("\n=== JSON-RPC drive: resources + prompts ===");
 await driveServer();
 
