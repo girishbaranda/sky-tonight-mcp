@@ -974,7 +974,7 @@
   {
     "id": "M82",
     "name": "Cigar Galaxy",
-    "type": "spiral_galaxy",
+    "type": "galaxy",
     "constellation": "Ursa Major",
     "ra_deg": 148.9684,
     "dec_deg": 69.6797,
@@ -1214,7 +1214,7 @@
   {
     "id": "M102",
     "name": "Spindle Galaxy",
-    "type": "spiral_galaxy",
+    "type": "galaxy",
     "constellation": "Draco",
     "ra_deg": 226.6232,
     "dec_deg": 55.7633,
