@@ -77,35 +77,53 @@ async function driveServer(): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn("npx", ["tsx", "src/server.ts"], { cwd: new URL("..", import.meta.url) });
     let stdout = "";
-    child.stdout.on("data", (d) => (stdout += d.toString()));
-    child.stderr.on("data", () => {}); // discard
+    let stderr = "";
+    child.stdout.on("data", (d) => {
+      stdout += d.toString();
+      // Once we've received 5 JSON-RPC replies (initialize + 4 methods),
+      // close stdin to let the server shut down cleanly.
+      const replyCount = stdout.trim().split("\n").filter(Boolean).length;
+      if (replyCount >= 5) child.stdin.end();
+    });
+    child.stderr.on("data", (d) => (stderr += d.toString()));
     child.on("error", reject);
-    child.on("close", () => {
-      const lines = stdout.trim().split("\n").filter(Boolean);
-      const replies = lines.map((l) => JSON.parse(l));
+    child.on("close", (code) => {
+      try {
+        if (code !== 0 && code !== null) {
+          throw new Error(`server exited with code ${code}\nstderr: ${stderr}`);
+        }
+        const lines = stdout.trim().split("\n").filter(Boolean);
+        const replies = lines.map((l) => JSON.parse(l));
 
-      const list = replies.find((r) => r.id === 2);
-      const tmpl = replies.find((r) => r.id === 3);
-      const idx = replies.find((r) => r.id === 4);
-      const m31r = replies.find((r) => r.id === 5);
+        const list = replies.find((r) => r.id === 2);
+        const tmpl = replies.find((r) => r.id === 3);
+        const idx = replies.find((r) => r.id === 4);
+        const m31r = replies.find((r) => r.id === 5);
 
-      const listCount = list?.result?.resources?.length ?? 0;
-      const tmplCount = tmpl?.result?.resourceTemplates?.length ?? 0;
-      console.log(`resources/list: ${listCount} (expected 2: messier-catalog, constellation-catalog)`);
-      console.log(`resources/templates/list: ${tmplCount} (expected 2: messier-object, constellation-detail)`);
-      if (listCount !== 2 || tmplCount !== 2) return reject(new Error("unexpected resource counts"));
+        const listCount = list?.result?.resources?.length ?? 0;
+        const tmplCount = tmpl?.result?.resourceTemplates?.length ?? 0;
+        console.log(`resources/list: ${listCount} (expected 2: messier-catalog, constellation-catalog)`);
+        console.log(`resources/templates/list: ${tmplCount} (expected 2: messier-object, constellation-detail)`);
+        if (listCount !== 2 || tmplCount !== 2) {
+          throw new Error(`unexpected resource counts (list=${listCount}, templates=${tmplCount})`);
+        }
 
-      const idxText = idx?.result?.contents?.[0]?.text;
-      const idxArr = JSON.parse(idxText);
-      console.log(`sky://catalog/messier read: ${idxArr.length} entries (expected 110)`);
-      if (idxArr.length !== 110) return reject(new Error("messier index wrong size"));
+        const idxText = idx?.result?.contents?.[0]?.text;
+        if (!idxText) throw new Error("missing reply for sky://catalog/messier read");
+        const idxArr = JSON.parse(idxText);
+        console.log(`sky://catalog/messier read: ${idxArr.length} entries (expected 110)`);
+        if (idxArr.length !== 110) throw new Error(`messier index wrong size: ${idxArr.length}`);
 
-      const m31Text = m31r?.result?.contents?.[0]?.text;
-      const m31Obj = JSON.parse(m31Text);
-      console.log(`sky://messier/M31 read: ${m31Obj.name}`);
-      if (m31Obj.id !== "M31") return reject(new Error("m31 read wrong"));
+        const m31Text = m31r?.result?.contents?.[0]?.text;
+        if (!m31Text) throw new Error("missing reply for sky://messier/M31 read");
+        const m31Obj = JSON.parse(m31Text);
+        console.log(`sky://messier/M31 read: ${m31Obj.name}`);
+        if (m31Obj.id !== "M31") throw new Error(`m31 read wrong id: ${m31Obj.id}`);
 
-      resolve();
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
     });
 
     const send = (frame: object) => child.stdin.write(JSON.stringify(frame) + "\n");
@@ -115,7 +133,8 @@ async function driveServer(): Promise<void> {
     send({ jsonrpc: "2.0", id: 3, method: "resources/templates/list" });
     send({ jsonrpc: "2.0", id: 4, method: "resources/read", params: { uri: "sky://catalog/messier" } });
     send({ jsonrpc: "2.0", id: 5, method: "resources/read", params: { uri: "sky://messier/M31" } });
-    setTimeout(() => child.stdin.end(), 2000);
+    // Safety fallback: if for some reason we never receive 5 replies, force close after 10s.
+    setTimeout(() => child.stdin.end(), 10_000);
   });
 }
 
