@@ -80,7 +80,7 @@ async function driveServer(): Promise<void> {
     let stderr = "";
     child.stdout.on("data", (d) => {
       stdout += d.toString();
-      // Once we've received 5 JSON-RPC replies (initialize + 4 methods),
+      // Once we've received 9 JSON-RPC replies (initialize + 4 resource methods + 4 prompt methods),
       // close stdin to let the server shut down cleanly.
       const replyCount = stdout.trim().split("\n").filter(Boolean).length;
       if (replyCount >= 9) child.stdin.end();
