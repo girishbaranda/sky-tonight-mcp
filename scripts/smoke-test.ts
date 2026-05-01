@@ -239,7 +239,7 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
   const url = `http://127.0.0.1:${addr.port}/mcp`;
   try {
     // initialize
-    await fetch(url, {
+    const initRes = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
@@ -253,6 +253,9 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
         },
       }),
     });
+    if (initRes.status !== 200) {
+      throw new Error(`HTTP initialize failed: ${initRes.status} ${await initRes.text()}`);
+    }
     // tools/call moon_phase
     const res = await fetch(url, {
       method: "POST",
@@ -271,6 +274,9 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
     } catch {
       const dataLine = text.split("\n").find((l) => l.startsWith("data: "));
       if (dataLine) parsed = JSON.parse(dataLine.slice(6));
+    }
+    if (parsed === null) {
+      throw new Error(`HTTP body was neither JSON nor SSE-framed:\nstatus=${res.status}\nbody:\n${text}`);
     }
     if (res.status !== 200) throw new Error(`HTTP ${res.status}: ${text}`);
     if (!parsed?.result?.content?.[0]?.text) {
