@@ -69,3 +69,53 @@ test("initialize round-trip returns serverInfo and protocolVersion", async () =>
   assert.equal(json.result.serverInfo.name, "sky-tonight");
   assert.ok(json.result.protocolVersion, "expected a protocolVersion");
 });
+
+test("tools/call moon_phase returns non-empty content", async () => {
+  // Stateless mode: the SDK's validateSession() skips the init check when
+  // sessionIdGenerator is undefined, so every POST is an independent
+  // JSON-RPC call. No prior initialize needed.
+  const { status, json } = await postMcp({
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/call",
+    params: { name: "moon_phase", arguments: {} },
+  });
+  assert.equal(status, 200);
+  assert.equal(json.id, 2);
+  assert.ok(Array.isArray(json.result.content), "expected content array");
+  assert.ok(json.result.content.length > 0, "expected non-empty content");
+  assert.equal(json.result.content[0].type, "text");
+  assert.ok(json.result.content[0].text.length > 0);
+});
+
+test("GET /mcp returns 405 with Allow: POST", async () => {
+  const res = await fetch(`${baseUrl}/mcp`, { method: "GET" });
+  assert.equal(res.status, 405);
+  assert.equal(res.headers.get("allow"), "POST");
+});
+
+test("POST to wrong path returns 404", async () => {
+  const res = await fetch(`${baseUrl}/nope`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(initFrame),
+  });
+  assert.equal(res.status, 404);
+});
+
+test("two concurrent moon_phase calls both succeed (per-request server isolation)", async () => {
+  const call = (id: number) =>
+    postMcp({
+      jsonrpc: "2.0",
+      id,
+      method: "tools/call",
+      params: { name: "moon_phase", arguments: {} },
+    });
+  const [a, b] = await Promise.all([call(10), call(11)]);
+  assert.equal(a.status, 200);
+  assert.equal(b.status, 200);
+  assert.equal(a.json.id, 10);
+  assert.equal(b.json.id, 11);
+  assert.ok(a.json.result.content[0].text.length > 0);
+  assert.ok(b.json.result.content[0].text.length > 0);
+});
