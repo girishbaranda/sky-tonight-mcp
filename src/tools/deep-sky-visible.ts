@@ -95,7 +95,8 @@ export function registerDeepSkyVisible(server: McpServer): void {
           .describe(
             "Restrict to one category. galaxy=spiral+elliptical+galaxy; " +
               "nebula=nebula+planetary_nebula+supernova_remnant; " +
-              "cluster=open+globular.",
+              "cluster=open+globular. When omitted, all types are returned, " +
+              "including atypical Messier entries (M40 double star, M73 asterism).",
           ),
       },
     },
