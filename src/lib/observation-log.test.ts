@@ -52,3 +52,58 @@ test("_closeForTest closes the connection cleanly", () => {
   const conn = _getDbForTest();
   assert.ok(conn);
 });
+
+import { logObservation } from "./observation-log.js";
+
+test("logObservation returns a row with assigned id and createdAt", () => {
+  const row = logObservation({
+    target: "Jupiter",
+    latitude: 23.21,
+    longitude: 72.63,
+  });
+  assert.equal(typeof row.id, "number");
+  assert.ok(row.id > 0);
+  assert.equal(row.target, "Jupiter");
+  assert.equal(row.latitude, 23.21);
+  assert.equal(row.longitude, 72.63);
+  assert.match(row.createdAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  assert.match(row.observedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+});
+
+test("logObservation defaults observedAt to now when omitted", () => {
+  const before = Date.now();
+  const row = logObservation({ target: "Saturn", latitude: 0, longitude: 0 });
+  const after = Date.now();
+  const obsTime = new Date(row.observedAt).getTime();
+  assert.ok(obsTime >= before && obsTime <= after, `observedAt ${row.observedAt} not within [${before}, ${after}]`);
+});
+
+test("logObservation honors explicit observedAt", () => {
+  const t = new Date("2026-01-15T20:00:00.000Z");
+  const row = logObservation({ target: "Mars", latitude: 0, longitude: 0, observedAt: t });
+  assert.equal(row.observedAt, "2026-01-15T20:00:00.000Z");
+});
+
+test("logObservation leaves optional fields NULL when omitted", () => {
+  const row = logObservation({ target: "M31", latitude: 0, longitude: 0 });
+  assert.equal(row.notes, null);
+  assert.equal(row.seeing, null);
+  assert.equal(row.transparency, null);
+  assert.equal(row.equipment, null);
+});
+
+test("logObservation persists optional fields when supplied", () => {
+  const row = logObservation({
+    target: "M42",
+    latitude: 0,
+    longitude: 0,
+    notes: "great detail in the trapezium",
+    seeing: 4,
+    transparency: 5,
+    equipment: '8" Dob',
+  });
+  assert.equal(row.notes, "great detail in the trapezium");
+  assert.equal(row.seeing, 4);
+  assert.equal(row.transparency, 5);
+  assert.equal(row.equipment, '8" Dob');
+});

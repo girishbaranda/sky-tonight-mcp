@@ -76,3 +76,83 @@ export function _closeForTest(): void {
 export function _getDbForTest(): Database.Database {
   return getDb();
 }
+
+// --- Public types
+
+export interface ObservationInput {
+  target: string;
+  latitude: number;
+  longitude: number;
+  observedAt?: Date;
+  notes?: string;
+  seeing?: number;       // 1..5
+  transparency?: number; // 1..5
+  equipment?: string;
+}
+
+export interface Observation {
+  id: number;
+  target: string;
+  latitude: number;
+  longitude: number;
+  observedAt: string;    // ISO 8601 UTC, ms precision
+  notes: string | null;
+  seeing: number | null;
+  transparency: number | null;
+  equipment: string | null;
+  createdAt: string;     // ISO 8601 UTC, ms precision
+}
+
+interface Row {
+  id: number;
+  observed_at: string;
+  latitude: number;
+  longitude: number;
+  target: string;
+  notes: string | null;
+  seeing: number | null;
+  transparency: number | null;
+  equipment: string | null;
+  created_at: string;
+}
+
+function rowToObservation(r: Row): Observation {
+  return {
+    id: r.id,
+    target: r.target,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    observedAt: r.observed_at,
+    notes: r.notes,
+    seeing: r.seeing,
+    transparency: r.transparency,
+    equipment: r.equipment,
+    createdAt: r.created_at,
+  };
+}
+
+// --- Public API
+
+export function logObservation(input: ObservationInput): Observation {
+  const conn = getDb();
+  const observedAt = (input.observedAt ?? new Date()).toISOString();
+  const createdAt = new Date().toISOString();
+  const stmt = conn.prepare(`
+    INSERT INTO observations
+      (observed_at, latitude, longitude, target, notes, seeing, transparency, equipment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    RETURNING *
+  `);
+  const row = stmt.get(
+    observedAt,
+    input.latitude,
+    input.longitude,
+    input.target,
+    input.notes ?? null,
+    input.seeing ?? null,
+    input.transparency ?? null,
+    input.equipment ?? null,
+    createdAt,
+  ) as Row;
+  return rowToObservation(row);
+}
