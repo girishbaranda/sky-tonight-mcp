@@ -1,6 +1,6 @@
 {
   "name": "sky-tonight",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server for personal astronomy — what's visible tonight, ISS passes, moon phases.",
   "type": "module",
   "bin": {
