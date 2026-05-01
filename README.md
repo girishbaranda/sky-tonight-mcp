@@ -24,6 +24,14 @@ Two MCP **Resources** are also exposed (read-only catalog data the LLM can brows
 | `sky://messier/{id}` | Full record for one Messier object — `sky://messier/M31` for Andromeda |
 | `sky://constellation/{abbr}` | Full record for one constellation — `sky://constellation/Ori` for Orion |
 
+Three MCP **Prompts** are also exposed (slash-invocable templates that compose the tools and resources into curated workflows):
+
+| Prompt | Arguments | Returns |
+|---|---|---|
+| `plan_tonight_session` | `duration_min`, `skill_level` (beginner/intermediate/advanced) | A skill-tuned observing plan combining moon phase, planets, deep-sky picks, and ISS passes |
+| `identify_object` | `description` (free text) | An open-ended workflow that rules out aircraft/meteors and matches the description against tonight's sky |
+| `tour_constellation` | `name` (constellation name or IAU 3-letter abbr.) | A visibility-aware walk through the constellation's brightest star and Messier highlights up tonight |
+
 ## Quickstart
 
 ```bash
@@ -40,11 +48,19 @@ Wire it into Claude Code:
 claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
 ```
 
-Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with four tools. Now ask:
+Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with four tools and three prompts. Now ask:
 
 > "I'm at 23.2156, 72.6369 — what's visible tonight above 20 degrees?"
 > "When's the next ISS pass over Gandhinagar in the next 3 days?"
 > "What's the moon phase tonight?"
+
+Or invoke a prompt template directly:
+
+```
+/sky-tonight:plan_tonight_session duration_min=120 skill_level=intermediate
+/sky-tonight:identify_object description="bright dot low in the southwest at 9pm"
+/sky-tonight:tour_constellation name=Orion
+```
 
 ## Reading this codebase as an MCP tutorial
 
@@ -62,6 +78,9 @@ registerMoonPhase(server);
 registerDeepSkyVisible(server);
 registerMessierResources(server);                  //     ... and resources
 registerConstellationResources(server);
+registerPlanTonightSession(server);                //     ... and prompts
+registerIdentifyObject(server);
+registerTourConstellation(server);
 const transport = new StdioServerTransport();      // (3) pick transport
 await server.connect(transport);                   // (4) start the protocol loop
 ```
@@ -152,6 +171,55 @@ You'll see three replies: the `initialize` handshake, the `resources/list` resul
 
 **Tools vs. Resources — when to use which?** Tools = computation/actions (the LLM asks you to *do* something). Resources = data/context (the LLM asks you for *information*). `deep_sky_visible_tonight` is a tool because it computes; `sky://messier/M31` is a resource because it's a static fact.
 
+### 4.7 `src/prompts/plan-tonight-session.ts` — your first MCP Prompt
+
+Prompts are the third MCP primitive. Unlike Tools (which the LLM *calls*) or Resources (which the LLM *reads*), Prompts are **templated user messages** the *user* invokes — usually as a slash command like `/sky-tonight:plan_tonight_session`. The MCP host substitutes the user's arguments into the template and injects the resulting message into the conversation. The LLM then follows the templated instructions, calling whichever tools and resources the prompt directs it toward.
+
+The pattern:
+
+```ts
+server.registerPrompt(
+  "plan_tonight_session",                // (a) prompt name — what the user types after the colon
+  {
+    title: "...",                        // (b) human-friendly title (slash-command picker)
+    description: "...",                  // (c) what the host shows next to the title
+    argsSchema: {                        // (d) raw Zod shape (record of schemas) — args are always strings at the wire
+      duration_min: z.string(),
+      skill_level: z.string(),
+    },
+  },
+  ({ duration_min, skill_level }) => ({  // (e) handler — returns messages to inject
+    messages: [
+      {
+        role: "user",
+        content: { type: "text", text: `...templated body referencing tools by name...` },
+      },
+    ],
+  })
+);
+```
+
+Two things worth noticing:
+
+- **Pure body builder.** Each prompt file exports `build*Body(args)` separately from `register*(server)`. The builder is a pure function — easy to unit-test argument substitution without spinning up a server. The registrant is a thin wrapper.
+- **Prompt args are strings at the wire.** MCP prompt arguments don't have a numeric or enum type at the protocol level. We accept everything as `z.string()` and either let the LLM consume the substituted text directly (e.g. "120-minute" in the body) or have the body itself spell out validation rules ("skill_level must be one of...").
+
+Try it manually:
+
+```bash
+(
+  printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"manual","version":"0"}}}'
+  printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+  printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"prompts/list"}'
+  printf '%s\n' '{"jsonrpc":"2.0","id":3,"method":"prompts/get","params":{"name":"plan_tonight_session","arguments":{"duration_min":"120","skill_level":"intermediate"}}}'
+  sleep 1
+) | npx tsx src/server.ts
+```
+
+You'll see three replies: the initialize handshake, the `prompts/list` result (three prompts with their argument schemas), and the `prompts/get` result — a `messages` array with the substituted body.
+
+**Tools vs. Resources vs. Prompts — when to use which?** Tools = computation. Resources = data. Prompts = workflows. A Prompt is the only one of the three that the *user* invokes directly; the other two are invoked by the LLM in service of whatever conversation the user is having.
+
 ### 5. The wire protocol — see it for yourself
 
 Run this in one terminal to manually drive the server with raw JSON-RPC:
@@ -195,6 +263,11 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
    │   ├── messier.ts ──────────┐                        │
    │   └── constellations.ts ───┴──► registerResource()  │
    │                                                     │
+   │   prompts/                                          │
+   │   ├── plan-tonight-session.ts ┐                     │
+   │   ├── identify-object.ts ─────┼──► registerPrompt() │
+   │   └── tour-constellation.ts ──┘                     │
+   │                                                     │
    │   data/                                             │
    │   ├── messier.json (110 objects)                    │
    │   └── constellations.json (88 entries)              │
@@ -215,7 +288,7 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 
 **v0.2 ✅** Resources primitive — Messier (110 objects) and IAU constellation (88 entries) catalogs exposed as hybrid index + per-object resources. Companion `deep_sky_visible_tonight` tool ties the catalog into observer-relative visibility computation.
 
-**v0.3 — Prompts.** Add `plan_tonight_session(duration_min, skill_level)` as a prompt template. The user types `/sky-tonight:plan_tonight_session` in Claude Code and gets a curated workflow. Third MCP primitive done.
+**v0.3 ✅** Prompts primitive — three prompt templates (`plan_tonight_session`, `identify_object`, `tour_constellation`) that compose the tools and resources into slash-invocable workflows. Third MCP primitive done.
 
 **v0.4 — Persistent observation log.** Add `log_observation` and `recall_log` tools backed by SQLite. Now the server is *stateful* — meaningful for any real-world MCP.
 
