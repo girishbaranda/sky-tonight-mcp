@@ -1,57 +1,17 @@
 #!/usr/bin/env node
 /**
- * Sky Tonight — an MCP server for personal astronomy.
+ * Sky Tonight — stdio entry point.
  *
- * This is the entry point. It does three things:
- *   1. Constructs an McpServer with name+version (advertised to clients on connect).
- *   2. Registers each tool, resource, and prompt (we delegate to per-file `register*`
- *      functions for clarity).
- *   3. Connects the server to a stdio transport — meaning the MCP host (Claude Code,
- *      Claude Desktop, etc.) will spawn this process and talk to it over stdin/stdout
- *      using JSON-RPC 2.0 framed messages.
+ * The MCP host (Claude Code, Claude Desktop, etc.) spawns this process and
+ * speaks JSON-RPC 2.0 over stdin/stdout. For the HTTP transport, see src/http.ts.
  *
- * To go remote later (week 3 in the README roadmap), swap StdioServerTransport for
- * StreamableHTTPServerTransport — everything else stays the same.
+ * Both files share src/lib/mcp-server.ts — the same eleven register*() calls
+ * back the same tools, resources, and prompts behind either transport.
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { createMcpServer } from "./lib/mcp-server.js";
 
-import { registerObjectsVisible } from "./tools/objects-visible.js";
-import { registerIssPasses } from "./tools/iss-passes.js";
-import { registerMoonPhase } from "./tools/moon-phase.js";
-import { registerDeepSkyVisible } from "./tools/deep-sky-visible.js";
-import { registerLogObservation } from "./tools/log-observation.js";
-import { registerRecallLog } from "./tools/recall-log.js";
-
-import { registerMessierResources } from "./resources/messier.js";
-import { registerConstellationResources } from "./resources/constellations.js";
-
-import { registerPlanTonightSession } from "./prompts/plan-tonight-session.js";
-import { registerIdentifyObject } from "./prompts/identify-object.js";
-import { registerTourConstellation } from "./prompts/tour-constellation.js";
-
-const server = new McpServer({
-  name: "sky-tonight",
-  version: "0.4.0",
-});
-
-// Tools
-registerObjectsVisible(server);
-registerIssPasses(server);
-registerMoonPhase(server);
-registerDeepSkyVisible(server);
-registerLogObservation(server);
-registerRecallLog(server);
-
-// Resources
-registerMessierResources(server);
-registerConstellationResources(server);
-
-// Prompts
-registerPlanTonightSession(server);
-registerIdentifyObject(server);
-registerTourConstellation(server);
-
+const server = createMcpServer();
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
