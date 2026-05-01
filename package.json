@@ -1,6 +1,6 @@
 {
   "name": "sky-tonight",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "MCP server for personal astronomy — what's visible tonight, ISS passes, moon phases.",
   "type": "module",
   "bin": {
@@ -9,7 +9,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:http": "node dist/http.js",
     "dev": "tsx src/server.ts",
+    "dev:http": "tsx src/http.ts",
     "test": "tsx --test 'src/**/*.test.ts'",
     "typecheck": "tsc --noEmit"
   },
