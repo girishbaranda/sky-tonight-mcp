@@ -70,7 +70,7 @@ if (!ori || ori.name !== "Orion" || ori.brightest_star.name !== "Rigel") {
   process.exit(1);
 }
 
-console.log("\n=== JSON-RPC drive: resources ===");
+console.log("\n=== JSON-RPC drive: resources + prompts ===");
 await driveServer();
 
 async function driveServer(): Promise<void> {
@@ -83,7 +83,7 @@ async function driveServer(): Promise<void> {
       // Once we've received 5 JSON-RPC replies (initialize + 4 methods),
       // close stdin to let the server shut down cleanly.
       const replyCount = stdout.trim().split("\n").filter(Boolean).length;
-      if (replyCount >= 5) child.stdin.end();
+      if (replyCount >= 9) child.stdin.end();
     });
     child.stderr.on("data", (d) => (stderr += d.toString()));
     child.on("error", reject);
@@ -120,6 +120,42 @@ async function driveServer(): Promise<void> {
         console.log(`sky://messier/M31 read: ${m31Obj.name}`);
         if (m31Obj.id !== "M31") throw new Error(`m31 read wrong id: ${m31Obj.id}`);
 
+        // --- v0.3 prompts coverage ---
+        const promptsList = replies.find((r) => r.id === 6);
+        const promptsListArr = promptsList?.result?.prompts ?? [];
+        console.log(`prompts/list: ${promptsListArr.length} (expected 3)`);
+        if (promptsListArr.length !== 3) {
+          throw new Error(`prompts/list wrong size: ${promptsListArr.length}`);
+        }
+        const promptNames = promptsListArr.map((p: { name: string }) => p.name).sort();
+        const expectedNames = ["identify_object", "plan_tonight_session", "tour_constellation"];
+        if (JSON.stringify(promptNames) !== JSON.stringify(expectedNames)) {
+          throw new Error(`prompts/list wrong names: ${JSON.stringify(promptNames)}`);
+        }
+
+        const planGet = replies.find((r) => r.id === 7);
+        const planText = planGet?.result?.messages?.[0]?.content?.text;
+        if (!planText) throw new Error("missing reply for prompts/get plan_tonight_session");
+        if (!planText.includes("120-minute")) throw new Error("plan_tonight_session did not substitute duration_min");
+        if (!planText.includes("intermediate observer")) throw new Error("plan_tonight_session did not substitute skill_level");
+        console.log("prompts/get plan_tonight_session: ok (substitutions verified)");
+
+        const idGet = replies.find((r) => r.id === 8);
+        const idText = idGet?.result?.messages?.[0]?.content?.text;
+        if (!idText) throw new Error("missing reply for prompts/get identify_object");
+        if (!idText.includes("bright dot in the southwest at 9pm")) {
+          throw new Error("identify_object did not embed description");
+        }
+        console.log("prompts/get identify_object: ok (description embedded)");
+
+        const tourGet = replies.find((r) => r.id === 9);
+        const tourText = tourGet?.result?.messages?.[0]?.content?.text;
+        if (!tourText) throw new Error("missing reply for prompts/get tour_constellation");
+        if (!tourText.includes("**Orion**")) {
+          throw new Error("tour_constellation did not substitute name");
+        }
+        console.log("prompts/get tour_constellation: ok (name substituted)");
+
         resolve();
       } catch (err) {
         reject(err);
@@ -133,7 +169,35 @@ async function driveServer(): Promise<void> {
     send({ jsonrpc: "2.0", id: 3, method: "resources/templates/list" });
     send({ jsonrpc: "2.0", id: 4, method: "resources/read", params: { uri: "sky://catalog/messier" } });
     send({ jsonrpc: "2.0", id: 5, method: "resources/read", params: { uri: "sky://messier/M31" } });
-    // Safety fallback: if for some reason we never receive 5 replies, force close after 10s.
+    send({ jsonrpc: "2.0", id: 6, method: "prompts/list" });
+    send({
+      jsonrpc: "2.0",
+      id: 7,
+      method: "prompts/get",
+      params: {
+        name: "plan_tonight_session",
+        arguments: { duration_min: "120", skill_level: "intermediate" },
+      },
+    });
+    send({
+      jsonrpc: "2.0",
+      id: 8,
+      method: "prompts/get",
+      params: {
+        name: "identify_object",
+        arguments: { description: "bright dot in the southwest at 9pm" },
+      },
+    });
+    send({
+      jsonrpc: "2.0",
+      id: 9,
+      method: "prompts/get",
+      params: {
+        name: "tour_constellation",
+        arguments: { name: "Orion" },
+      },
+    });
+    // Safety fallback: if for some reason we never receive 9 replies, force close after 10s.
     setTimeout(() => child.stdin.end(), 10_000);
   });
 }
