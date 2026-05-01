@@ -50,15 +50,18 @@ Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with fou
 
 Read the files in this order — each layer adds one concept.
 
-### 1. `src/server.ts` — the entry point (20 lines)
+### 1. `src/server.ts` — the entry point (~45 lines)
 
 This file shows the entire shape of an MCP server in 4 statements:
 
 ```ts
 const server = new McpServer({ name, version });   // (1) advertise identity
-registerObjectsVisible(server);                    // (2) attach capabilities
+registerObjectsVisible(server);                    // (2) attach capabilities (tools)
 registerIssPasses(server);
 registerMoonPhase(server);
+registerDeepSkyVisible(server);
+registerMessierResources(server);                  //     ... and resources
+registerConstellationResources(server);
 const transport = new StdioServerTransport();      // (3) pick transport
 await server.connect(transport);                   // (4) start the protocol loop
 ```
@@ -145,7 +148,7 @@ Try it manually:
 ) | npx tsx src/server.ts
 ```
 
-You'll see two replies: the index of all resources, and the full M31 record.
+You'll see three replies: the `initialize` handshake, the `resources/list` result (two fixed-URI entries), and the full M31 record.
 
 **Tools vs. Resources — when to use which?** Tools = computation/actions (the LLM asks you to *do* something). Resources = data/context (the LLM asks you for *information*). `deep_sky_visible_tonight` is a tool because it computes; `sky://messier/M31` is a resource because it's a static fact.
 
@@ -163,7 +166,7 @@ Run this in one terminal to manually drive the server with raw JSON-RPC:
 ) | npx tsx src/server.ts
 ```
 
-You'll see four JSON responses: the `initialize` reply (capability negotiation), the `tools/list` reply (your three tools with their schemas), and the `tools/call` reply (the moon phase). That's the entire protocol you'll ever interact with at the wire level.
+You'll see three JSON responses: the `initialize` reply (capability negotiation), the `tools/list` reply (your four tools with their schemas), and the `tools/call` reply (the moon phase). That's the entire protocol you'll ever interact with at the wire level.
 
 ## Architecture diagram
 
