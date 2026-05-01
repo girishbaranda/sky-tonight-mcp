@@ -24,10 +24,12 @@ export function registerRecallLog(server: McpServer): void {
           .describe("Substring match, case-insensitive. Omit to see all."),
         since: z
           .string()
+          .datetime()
           .optional()
           .describe("ISO date — inclusive lower bound on observation time"),
         until: z
           .string()
+          .datetime()
           .optional()
           .describe("ISO date — inclusive upper bound on observation time"),
         min_seeing: z
@@ -61,8 +63,9 @@ export function registerRecallLog(server: McpServer): void {
 
       const filterParts: string[] = [];
       if (target) filterParts.push(`target~"${target}"`);
-      if (since) filterParts.push(`since=${since}`);
-      if (until) filterParts.push(`until=${until}`);
+      // Echo the canonical ISO form that was actually queried, not the raw input.
+      if (filters.since) filterParts.push(`since=${filters.since.toISOString()}`);
+      if (filters.until) filterParts.push(`until=${filters.until.toISOString()}`);
       if (min_seeing != null) filterParts.push(`min_seeing=${min_seeing}`);
       filterParts.push(`limit=${limit}`);
       const filterSummary = `Filters: ${filterParts.join(", ")}`;

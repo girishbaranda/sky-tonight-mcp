@@ -25,6 +25,7 @@ export function registerLogObservation(server: McpServer): void {
         longitude: z.number().min(-180).max(180),
         timestamp: z
           .string()
+          .datetime()
           .optional()
           .describe("ISO timestamp of the observation (e.g. '2026-05-01T20:30:00Z'); defaults to now"),
         notes: z.string().optional(),
