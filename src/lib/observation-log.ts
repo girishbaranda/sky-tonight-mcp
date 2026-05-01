@@ -133,6 +133,50 @@ function rowToObservation(r: Row): Observation {
 
 // --- Public API
 
+export interface RecallFilters {
+  target?: string;       // substring, case-insensitive
+  since?: Date;
+  until?: Date;
+  minSeeing?: number;    // 1..5
+  limit?: number;        // default 20, capped at 100, must be >= 1
+}
+
+export function recallObservations(filters: RecallFilters): Observation[] {
+  const conn = getDb();
+
+  let limit = filters.limit ?? 20;
+  if (!Number.isFinite(limit) || limit <= 0) {
+    throw new Error(`recallObservations: limit must be > 0 (got ${filters.limit})`);
+  }
+  if (limit > 100) limit = 100;
+
+  const where: string[] = [];
+  const params: (string | number)[] = [];
+  if (filters.target) {
+    where.push("LOWER(target) LIKE LOWER(?)");
+    params.push(`%${filters.target}%`);
+  }
+  if (filters.since) {
+    where.push("observed_at >= ?");
+    params.push(filters.since.toISOString());
+  }
+  if (filters.until) {
+    where.push("observed_at <= ?");
+    params.push(filters.until.toISOString());
+  }
+  if (filters.minSeeing != null) {
+    where.push("seeing IS NOT NULL AND seeing >= ?");
+    params.push(filters.minSeeing);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const stmt = conn.prepare(
+    `SELECT * FROM observations ${whereSql} ORDER BY observed_at DESC, id DESC LIMIT ?`,
+  );
+  const rows = stmt.all(...params, limit) as Row[];
+  return rows.map(rowToObservation);
+}
+
 export function logObservation(input: ObservationInput): Observation {
   const conn = getDb();
   const observedAt = (input.observedAt ?? new Date()).toISOString();
