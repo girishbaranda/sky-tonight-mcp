@@ -228,4 +228,64 @@ async function driveServer(): Promise<void> {
   });
 }
 
+console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
+{
+  const { startHttpServer } = await import("../src/http.js");
+  const httpServer = await startHttpServer({ host: "127.0.0.1", port: 0 });
+  const addr = httpServer.address();
+  if (!addr || typeof addr === "string") {
+    throw new Error("expected an inet address from http server");
+  }
+  const url = `http://127.0.0.1:${addr.port}/mcp`;
+  try {
+    // initialize
+    const initRes = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "smoke", version: "0" },
+        },
+      }),
+    });
+    if (initRes.status !== 200) {
+      throw new Error(`HTTP initialize failed: ${initRes.status} ${await initRes.text()}`);
+    }
+    // tools/call moon_phase
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "moon_phase", arguments: {} },
+      }),
+    });
+    const text = await res.text();
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const dataLine = text.split("\n").find((l) => l.startsWith("data: "));
+      if (dataLine) parsed = JSON.parse(dataLine.slice(6));
+    }
+    if (parsed === null) {
+      throw new Error(`HTTP body was neither JSON nor SSE-framed:\nstatus=${res.status}\nbody:\n${text}`);
+    }
+    if (res.status !== 200) throw new Error(`HTTP ${res.status}: ${text}`);
+    if (!parsed?.result?.content?.[0]?.text) {
+      throw new Error(`unexpected HTTP response: ${text}`);
+    }
+    console.log(`HTTP /mcp moon_phase: ${parsed.result.content[0].text.split("\n")[0]}`);
+  } finally {
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+}
+
 console.log("\nAll smoke tests completed.");
