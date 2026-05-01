@@ -6,7 +6,7 @@ This repo is also a learning project. The code is intentionally small (~500 line
 
 ## What this server can do
 
-Three tools, all powered by real ephemeris math (no hand-waving, no LLM guessing):
+Four tools, all powered by real ephemeris math (no hand-waving, no LLM guessing):
 
 | Tool | Returns |
 |---|---|
@@ -40,7 +40,7 @@ Wire it into Claude Code:
 claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
 ```
 
-Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with three tools. Now ask:
+Restart Claude Code, run `/mcp` — you should see `sky-tonight` listed with four tools. Now ask:
 
 > "I'm at 23.2156, 72.6369 — what's visible tonight above 20 degrees?"
 > "When's the next ISS pass over Gandhinagar in the next 3 days?"
