@@ -3,10 +3,14 @@
  *
  * Records an observation in the user's persistent log. First stateful tool —
  * see ../lib/observation-log.ts for the storage layer.
+ *
+ * The user identity comes from the auth context (currentUserId), not the input
+ * schema. On HTTP it's the JWT's sub claim; on stdio it's the constant "local".
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { logObservation } from "../lib/observation-log.js";
+import { currentUserId } from "../lib/user-context.js";
 
 export function registerLogObservation(server: McpServer): void {
   server.registerTool(
@@ -52,6 +56,7 @@ export function registerLogObservation(server: McpServer): void {
     async ({ target, latitude, longitude, timestamp, notes, seeing, transparency, equipment }) => {
       try {
         const row = logObservation({
+          userId: currentUserId(),
           target,
           latitude,
           longitude,

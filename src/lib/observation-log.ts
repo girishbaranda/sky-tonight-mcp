@@ -32,9 +32,13 @@ function openDb(path: string): Database.Database {
   const conn = new Database(path);
   conn.pragma("journal_mode = WAL");
   conn.pragma("foreign_keys = ON");
+
+  // Create-fresh path. New DBs get user_id NOT NULL with no DEFAULT —
+  // every insert must supply it explicitly.
   conn.exec(`
     CREATE TABLE IF NOT EXISTS observations (
       id           INTEGER PRIMARY KEY,
+      user_id      TEXT    NOT NULL,
       observed_at  TEXT    NOT NULL,
       latitude     REAL    NOT NULL,
       longitude    REAL    NOT NULL,
@@ -45,9 +49,24 @@ function openDb(path: string): Database.Database {
       equipment    TEXT,
       created_at   TEXT    NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_obs_observed_at ON observations(observed_at);
     CREATE INDEX IF NOT EXISTS idx_obs_target_lower ON observations(LOWER(target));
   `);
+
+  // Migration path: a v0.5 DB has no user_id column. Add it with DEFAULT 'local'
+  // so existing rows backfill, then leave the column NOT NULL for future inserts.
+  // CREATE TABLE above is idempotent — it's the migration that's the interesting bit.
+  // NOTE: idx_obs_user_observed_at is created here (after ensuring user_id exists)
+  // rather than in the CREATE TABLE block above, so it works for both fresh DBs
+  // and migrated v0.5 DBs.
+  const cols = conn
+    .prepare("PRAGMA table_info(observations)")
+    .all() as Array<{ name: string }>;
+  const hasUserId = cols.some((c) => c.name === "user_id");
+  if (cols.length > 0 && !hasUserId) {
+    conn.exec(`ALTER TABLE observations ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'`);
+  }
+  conn.exec(`CREATE INDEX IF NOT EXISTS idx_obs_user_observed_at ON observations(user_id, observed_at)`);
+
   return conn;
 }
 
@@ -80,6 +99,7 @@ export function _getDbForTest(): Database.Database {
 // --- Public types
 
 export interface ObservationInput {
+  userId: string;
   target: string;
   latitude: number;
   longitude: number;
@@ -92,6 +112,7 @@ export interface ObservationInput {
 
 export interface Observation {
   id: number;
+  userId: string;
   target: string;
   latitude: number;
   longitude: number;
@@ -105,6 +126,7 @@ export interface Observation {
 
 interface Row {
   id: number;
+  user_id: string;
   observed_at: string;
   latitude: number;
   longitude: number;
@@ -119,6 +141,7 @@ interface Row {
 function rowToObservation(r: Row): Observation {
   return {
     id: r.id,
+    userId: r.user_id,
     target: r.target,
     latitude: r.latitude,
     longitude: r.longitude,
@@ -134,6 +157,7 @@ function rowToObservation(r: Row): Observation {
 // --- Public API
 
 export interface RecallFilters {
+  userId: string;
   target?: string;       // substring, case-insensitive
   since?: Date;
   until?: Date;
@@ -150,8 +174,8 @@ export function recallObservations(filters: RecallFilters): Observation[] {
   }
   if (limit > 100) limit = 100;
 
-  const where: string[] = [];
-  const params: (string | number)[] = [];
+  const where: string[] = ["user_id = ?"];
+  const params: (string | number)[] = [filters.userId];
   if (filters.target) {
     where.push("LOWER(target) LIKE LOWER(?)");
     params.push(`%${filters.target}%`);
@@ -169,7 +193,7 @@ export function recallObservations(filters: RecallFilters): Observation[] {
     params.push(filters.minSeeing);
   }
 
-  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const whereSql = `WHERE ${where.join(" AND ")}`;
   const stmt = conn.prepare(
     `SELECT * FROM observations ${whereSql} ORDER BY observed_at DESC, id DESC LIMIT ?`,
   );
@@ -183,11 +207,12 @@ export function logObservation(input: ObservationInput): Observation {
   const createdAt = new Date().toISOString();
   const stmt = conn.prepare(`
     INSERT INTO observations
-      (observed_at, latitude, longitude, target, notes, seeing, transparency, equipment, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, observed_at, latitude, longitude, target, notes, seeing, transparency, equipment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `);
   const row = stmt.get(
+    input.userId,
     observedAt,
     input.latitude,
     input.longitude,

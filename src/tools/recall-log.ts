@@ -3,10 +3,14 @@
  *
  * Searches the user's persistent observation log. Read side of the v0.4
  * stateful pair — see ./log-observation.ts and ../lib/observation-log.ts.
+ *
+ * The user identity comes from the auth context (currentUserId), not the input
+ * schema. The lib filters rows by user_id automatically.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { recallObservations, type RecallFilters } from "../lib/observation-log.js";
+import { currentUserId } from "../lib/user-context.js";
 
 export function registerRecallLog(server: McpServer): void {
   server.registerTool(
@@ -44,6 +48,7 @@ export function registerRecallLog(server: McpServer): void {
     },
     async ({ target, since, until, min_seeing, limit }) => {
       const filters: RecallFilters = {
+        userId: currentUserId(),
         target,
         since: since ? new Date(since) : undefined,
         until: until ? new Date(until) : undefined,
@@ -63,7 +68,6 @@ export function registerRecallLog(server: McpServer): void {
 
       const filterParts: string[] = [];
       if (target) filterParts.push(`target~"${target}"`);
-      // Echo the canonical ISO form that was actually queried, not the raw input.
       if (filters.since) filterParts.push(`since=${filters.since.toISOString()}`);
       if (filters.until) filterParts.push(`until=${filters.until.toISOString()}`);
       if (min_seeing != null) filterParts.push(`min_seeing=${min_seeing}`);
