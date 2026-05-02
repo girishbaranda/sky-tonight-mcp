@@ -47,3 +47,8 @@ export function currentUserId(): string {
   if (processUserId !== undefined) return processUserId;
   throw new Error("currentUserId() called outside runWithUser scope");
 }
+
+/** Test-only: clear the process-level user fallback. */
+export function _resetProcessUserForTest(): void {
+  processUserId = undefined;
+}

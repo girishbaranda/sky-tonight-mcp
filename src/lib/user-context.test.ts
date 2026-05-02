@@ -1,6 +1,11 @@
-import { test } from "node:test";
+import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { runWithUser, currentUserId } from "./user-context.js";
+import { _resetProcessUserForTest, setProcessUser } from "./user-context.js";
+
+beforeEach(() => {
+  _resetProcessUserForTest();
+});
 
 test("currentUserId throws when called outside a runWithUser scope", () => {
   assert.throws(() => currentUserId(), /outside runWithUser scope/);
@@ -41,4 +46,33 @@ test("runWithUser nests — inner overrides outer for inner code", () => {
   });
   assert.equal(result.innerVal, "inner");
   assert.equal(result.outerAfter, "outer");
+});
+
+test("setProcessUser: currentUserId returns the process user when no ALS scope", () => {
+  setProcessUser("stdio-user");
+  assert.equal(currentUserId(), "stdio-user");
+});
+
+test("setProcessUser: ALS scope takes priority over process user", () => {
+  setProcessUser("stdio-user");
+  const got = runWithUser("alice", () => currentUserId());
+  assert.equal(got, "alice");
+});
+
+test("setProcessUser: after exiting an ALS scope, process user is restored", () => {
+  setProcessUser("stdio-user");
+  runWithUser("alice", () => currentUserId()); // throwaway scope
+  assert.equal(currentUserId(), "stdio-user");
+});
+
+test("setProcessUser: overwriting replaces the previous value", () => {
+  setProcessUser("first");
+  setProcessUser("second");
+  assert.equal(currentUserId(), "second");
+});
+
+test("_resetProcessUserForTest restores the throw-on-no-scope behavior", () => {
+  setProcessUser("temp");
+  _resetProcessUserForTest();
+  assert.throws(() => currentUserId(), /outside runWithUser scope/);
 });
