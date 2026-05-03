@@ -36,8 +36,9 @@ after(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
-async function mintToken(sub: string, opts: { expiresIn?: string; secret?: Uint8Array } = {}): Promise<string> {
-  return new SignJWT({})
+async function mintToken(sub: string, opts: { expiresIn?: string; secret?: Uint8Array; scopes?: string[] } = {}): Promise<string> {
+  const scopes = opts.scopes ?? ["sky-tonight:log:read", "sky-tonight:log:write"];
+  return new SignJWT({ scope: scopes.join(" ") })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(sub)
     .setIssuedAt()
@@ -259,4 +260,113 @@ test("two concurrent moon_phase calls both succeed (per-request server isolation
   assert.equal(b.status, 200);
   assert.equal(a.json.id, 20);
   assert.equal(b.json.id, 21);
+});
+
+async function mintTokenWithScopes(sub: string, scopes: string[]): Promise<string> {
+  return new SignJWT({ scope: scopes.join(" ") })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(sub)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(secretBytes);
+}
+
+async function postRpc(token: string, body: unknown): Promise<{ status: number; headers: Headers; body: unknown }> {
+  const res = await fetch(`${baseUrl}/mcp`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+      accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  let parsed: unknown = text;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    // SSE: pull JSON out of the first `data: ` line.
+    const dataLine = text.split("\n").find((l) => l.startsWith("data: "));
+    if (dataLine) {
+      try {
+        parsed = JSON.parse(dataLine.slice(6));
+      } catch {
+        /* leave as text */
+      }
+    }
+  }
+  return { status: res.status, headers: res.headers, body: parsed };
+}
+
+test("recall_log without sky-tonight:log:read → 403 + WWW-Authenticate insufficient_scope", async () => {
+  const token = await mintTokenWithScopes("alice", []); // zero scopes
+  const r = await postRpc(token, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: { name: "recall_log", arguments: {} },
+  });
+  assert.equal(r.status, 403);
+  const ww = r.headers.get("www-authenticate") ?? "";
+  assert.match(ww, /error="insufficient_scope"/);
+  assert.match(ww, /scope="sky-tonight:log:read"/);
+  assert.match(ww, /resource_metadata=/);
+  const errBody = r.body as { error?: { code?: number; message?: string; data?: { required_scope?: string } } };
+  assert.equal(errBody.error?.code, -32001);
+  assert.equal(errBody.error?.message, "insufficient_scope");
+  assert.equal(errBody.error?.data?.required_scope, "sky-tonight:log:read");
+});
+
+test("log_observation without sky-tonight:log:write → 403", async () => {
+  const token = await mintTokenWithScopes("alice", ["sky-tonight:log:read"]);
+  const r = await postRpc(token, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: {
+      name: "log_observation",
+      arguments: { target: "Jupiter", latitude: 23, longitude: 72 },
+    },
+  });
+  assert.equal(r.status, 403);
+  const ww = r.headers.get("www-authenticate") ?? "";
+  assert.match(ww, /scope="sky-tonight:log:write"/);
+});
+
+test("recall_log with sky-tonight:log:read → 200 (passes scope check; SDK handles call)", async () => {
+  const token = await mintTokenWithScopes("alice", ["sky-tonight:log:read"]);
+  const r = await postRpc(token, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: { name: "recall_log", arguments: {} },
+  });
+  assert.equal(r.status, 200);
+  const ok = r.body as { result?: { content?: unknown[] } };
+  assert.ok(ok.result);
+});
+
+test("non-log tool with no scopes → 200 (no scope required)", async () => {
+  const token = await mintTokenWithScopes("alice", []);
+  const r = await postRpc(token, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: {
+      name: "moon_phase",
+      arguments: { latitude: 23, longitude: 72 },
+    },
+  });
+  assert.equal(r.status, 200);
+});
+
+test("tools/list with no scopes → 200", async () => {
+  const token = await mintTokenWithScopes("alice", []);
+  const r = await postRpc(token, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/list",
+  });
+  assert.equal(r.status, 200);
 });

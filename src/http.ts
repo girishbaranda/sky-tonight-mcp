@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer } from "./lib/mcp-server.js";
 import { runWithUser } from "./lib/user-context.js";
+import { requiredScope, type McpRequest } from "./lib/scope-map.js";
 import {
   loadAuthConfig,
   verifyBearer,
@@ -47,7 +48,9 @@ export function startHttpServer({ host, port, authConfig }: StartOptions): Promi
       if (req.url === PRM_PATH && req.method === "GET") {
         const baseUrl = requestBaseUrl(req, host, port);
         const authServer =
-          cfg.mode === "hs256" ? "https://dev.local/oauth" : (cfg.issuer as string);
+          cfg.mode === "hs256"
+            ? (process.env.DEV_PRM_ISSUER ?? "https://dev.local/oauth")
+            : (cfg.issuer as string);
         const doc = {
           resource: `${baseUrl}/mcp`,
           authorization_servers: [authServer],
@@ -104,17 +107,41 @@ export function startHttpServer({ host, port, authConfig }: StartOptions): Promi
         return;
       }
 
-      // 5. Authenticated path: dispatch to the McpServer under runWithUser.
+      // 5. Buffer the request body so we can inspect it for scope checks AND
+      //    feed it to the SDK transport (which would otherwise re-read req).
+      const bodyBuf = await readBody(req);
+      let parsedBody: unknown;
+      try {
+        parsedBody = JSON.parse(bodyBuf.toString("utf8"));
+      } catch {
+        parsedBody = null;
+      }
+
+      // 6. Scope check.
+      const scopeReq = extractMcpRequest(parsedBody);
+      const required = scopeReq ? requiredScope(scopeReq) : null;
+      if (required && !ctx.scopes.includes(required)) {
+        write403InsufficientScope(res, baseUrl, required);
+        return;
+      }
+
+      // 7. Authenticated + scoped: dispatch to the McpServer under runWithUser.
       const server = createMcpServer();
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
       res.on("close", () => {
         server.close().catch((err) => console.error("[http] cleanup error:", err));
       });
-      console.error(`[http] POST /mcp sub=${ctx.userId} 200`);
-      await runWithUser(ctx.userId, async () => {
-        await server.connect(transport);
-        await transport.handleRequest(req, res);
-      });
+      console.error(`[http] POST /mcp sub=${ctx.userId} scope-ok=${required ?? "n/a"}`);
+
+      await runWithUser(
+        ctx.userId,
+        async () => {
+          await server.connect(transport);
+          // Pass parsedBody as the third arg so the SDK doesn't re-read req.
+          await transport.handleRequest(req, res, parsedBody);
+        },
+        ctx.scopes,
+      );
     } catch (err) {
       console.error("[http] handler error:", err);
       if (!res.headersSent) res.writeHead(500).end();
@@ -178,6 +205,48 @@ function requestBaseUrl(req: http.IncomingMessage, bindHost: string, bindPort: n
   const proto = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader)?.split(",")[0]?.trim() ?? "http";
   const host = req.headers.host ?? `${bindHost}:${bindPort}`;
   return `${proto}://${host}`;
+}
+
+async function readBody(req: http.IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer));
+  }
+  return Buffer.concat(chunks);
+}
+
+function extractMcpRequest(body: unknown): McpRequest | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as { method?: unknown; params?: unknown };
+  if (typeof b.method !== "string") return null;
+  const req: McpRequest = { method: b.method };
+  if (b.method === "tools/call" && b.params && typeof b.params === "object") {
+    const name = (b.params as { name?: unknown }).name;
+    if (typeof name === "string") req.toolName = name;
+  }
+  return req;
+}
+
+function write403InsufficientScope(
+  res: http.ServerResponse,
+  baseUrl: string,
+  scope: string,
+): void {
+  const prm = `${baseUrl}${PRM_PATH}`;
+  const ww = `Bearer realm="sky-tonight", error="insufficient_scope", scope="${scope}", resource_metadata="${prm}"`;
+  res.setHeader("WWW-Authenticate", ww);
+  res.setHeader("content-type", "application/json");
+  const errBody = JSON.stringify({
+    jsonrpc: "2.0",
+    id: null,
+    error: {
+      code: -32001,
+      message: "insufficient_scope",
+      data: { required_scope: scope },
+    },
+  });
+  res.writeHead(403).end(errBody);
+  console.error(`[http] POST /mcp 403 (insufficient_scope: needs ${scope})`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
