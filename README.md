@@ -113,7 +113,7 @@ curl -s -X POST http://127.0.0.1:3000/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"moon_phase","arguments":{}}}'
 ```
 
-`mint-token` accepts `--sub <id>` (defaults to `local-dev`) and `--exp <seconds>` (defaults to 86400). The dev minter refuses to run without `DEV_JWT_SECRET`; **do not** ship the secret outside your laptop.
+`mint-token` accepts `--sub <id>` (defaults to `local-dev`) and `--exp <seconds>` (defaults to 86400) — note that npm requires a literal `--` separator to forward args, so `npm run mint-token -- --sub alice`. The dev minter refuses to run without `DEV_JWT_SECRET`; **do not** ship the secret outside your laptop.
 
 Without auth, the server returns 401 + a `WWW-Authenticate` header pointing at the metadata endpoint:
 
@@ -132,6 +132,7 @@ Point at any RFC-compliant authorization server (Auth0, Keycloak, Clerk, Okta, a
 export OAUTH_JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
 export OAUTH_ISSUER=https://your-tenant.auth0.com/
 export OAUTH_AUDIENCE=sky-tonight
+npm run build
 npm run start:http
 ```
 
@@ -367,7 +368,7 @@ curl -s -X POST http://127.0.0.1:3000/mcp \
 
 The reply you get back is the same shape you'd get from the stdio server — because it *is* the same server. The transport changed; nothing else did.
 
-What this version does NOT add: authentication, sessions, deploy recipes. v0.6 brings OAuth 2.1 and per-user data scoping; v0.7 publishes to the registry. Until then, keep `HOST=127.0.0.1` and reach the server via a tunnel.
+What this version did NOT add: authentication, sessions, deploy recipes. §4.10 covers how v0.6 fills the auth gap with OAuth 2.1 and per-user data scoping; v0.7 will publish to the registry.
 
 ### 4.10 `src/lib/auth.ts` — your first protected MCP
 
