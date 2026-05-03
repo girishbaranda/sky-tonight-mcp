@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+.gitignore
+node_modules
+dist
+docs
+scripts
+*.test.ts
+src/**/*.test.ts
+README.md
+LICENSE
