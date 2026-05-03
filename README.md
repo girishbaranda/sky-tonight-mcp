@@ -87,10 +87,61 @@ Config (env vars):
 | Var | Default | Notes |
 |---|---|---|
 | `PORT` | `3000` | Server bind port. |
-| `HOST` | `127.0.0.1` | Server bind host. Set `0.0.0.0` to expose externally. |
+| `HOST` | `127.0.0.1` | Server bind host. Set `0.0.0.0` to expose externally (auth still required). |
 | `SKY_TONIGHT_DB` | `~/.sky-tonight/observations.db` | Same as v0.4. |
+| `DEV_JWT_SECRET` | — | Dev-only HS256 secret. **Never** use in production. Mutually exclusive with `OAUTH_JWKS_URL`. |
+| `OAUTH_JWKS_URL` | — | URL to the authorization server's JWKS document. Production path. |
+| `OAUTH_ISSUER` | — | Required when `OAUTH_JWKS_URL` is set. Must match the JWT's `iss` claim. |
+| `OAUTH_AUDIENCE` | — | Required when `OAUTH_JWKS_URL` is set. Must match the JWT's `aud` claim. |
 
-> **No auth in v0.5.** Real auth is v0.6 (OAuth 2.1). Until then, keep the server bound to `127.0.0.1` and reach it via `ssh -L`, a Cloudflare/ngrok tunnel, or a reverse proxy that you control. Setting `HOST=0.0.0.0` on a public network gives anyone with a route to the port full read/write access to your observation log.
+> **HTTP transport requires auth as of v0.6.** Set `DEV_JWT_SECRET` for local testing (mint tokens with `npm run mint-token`) or point at a real authorization server with `OAUTH_JWKS_URL` + `OAUTH_ISSUER` + `OAUTH_AUDIENCE`. See the **Authentication** section below.
+
+## Authentication
+
+v0.6 makes the HTTP transport an OAuth 2.1 **Resource Server**. It validates Bearer JWTs, advertises issuer metadata at `.well-known/oauth-protected-resource`, and partitions the observation log per user via the JWT's `sub` claim. Sky-tonight does *not* issue tokens — that's the Authorization Server's job. Use a real one in production; use the bundled HS256 minter for local development.
+
+### Dev path (HS256)
+
+```bash
+export DEV_JWT_SECRET=$(openssl rand -hex 32)
+npm run dev:http &
+TOKEN=$(npm run mint-token --silent)
+curl -s -X POST http://127.0.0.1:3000/mcp \
+  -H "content-type: application/json" \
+  -H "accept: application/json, text/event-stream" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"moon_phase","arguments":{}}}'
+```
+
+`mint-token` accepts `--sub <id>` (defaults to `local-dev`) and `--exp <seconds>` (defaults to 86400). The dev minter refuses to run without `DEV_JWT_SECRET`; **do not** ship the secret outside your laptop.
+
+Without auth, the server returns 401 + a `WWW-Authenticate` header pointing at the metadata endpoint:
+
+```
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="sky-tonight", resource_metadata="http://127.0.0.1:3000/.well-known/oauth-protected-resource"
+```
+
+A client that understands the MCP authorization spec follows that pointer to discover the issuer and obtain a token.
+
+### Production path (JWKS)
+
+Point at any RFC-compliant authorization server (Auth0, Keycloak, Clerk, Okta, a self-hosted oauth2-proxy, …). Configure four env vars instead of `DEV_JWT_SECRET`:
+
+```bash
+export OAUTH_JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
+export OAUTH_ISSUER=https://your-tenant.auth0.com/
+export OAUTH_AUDIENCE=sky-tonight
+npm run start:http
+```
+
+The server validates token signatures against the JWKS public keys, requires `iss` and `aud` to match, requires `exp` to be in the future, and uses `sub` as the user identifier for log scoping. No client registration step happens inside sky-tonight; clients register at the AS, get tokens, and present them.
+
+`DEV_JWT_SECRET` and `OAUTH_JWKS_URL` are mutually exclusive — pick one. The HTTP server refuses to start with neither set.
+
+### Per-user data scoping
+
+`log_observation` and `recall_log` filter rows by `user_id`, which is sourced from `jwt.sub` on HTTP and the constant string `"local"` on stdio. Two HTTP users with different `sub` values cannot see each other's rows; a stdio user and an HTTP user with `sub="local"` would share rows (treat that as a footgun and don't issue tokens with `sub: "local"`). Public catalogs (Messier, constellations) and pure-compute tools (planets, ISS, moon, deep-sky) return identical data for every authenticated caller.
 
 ## Persistence
 
@@ -318,6 +369,40 @@ The reply you get back is the same shape you'd get from the stdio server — bec
 
 What this version does NOT add: authentication, sessions, deploy recipes. v0.6 brings OAuth 2.1 and per-user data scoping; v0.7 publishes to the registry. Until then, keep `HOST=127.0.0.1` and reach the server via a tunnel.
 
+### 4.10 `src/lib/auth.ts` — your first protected MCP
+
+Up to v0.5, every HTTP request was anonymous. v0.6 makes the server an OAuth 2.1 Resource Server: every `POST /mcp` requires a Bearer JWT. The lesson is the **split** — sky-tonight is a Resource Server (validates tokens, scopes data), not an Authorization Server (issues tokens). The two roles are separable, and most production deployments don't run their own AS.
+
+Three pieces work together:
+
+```ts
+// src/lib/auth.ts
+export function loadAuthConfig(env): AuthConfig;       // either HS256 or JWKS
+export async function verifyBearer(token, cfg): AuthContext;
+```
+
+```ts
+// src/lib/user-context.ts — AsyncLocalStorage
+export function runWithUser<T>(userId, fn): T;
+export function currentUserId(): string;
+```
+
+```ts
+// src/http.ts — request flow
+1. GET /.well-known/oauth-protected-resource  → PRM doc, no auth
+2. OPTIONS /mcp                                → CORS preflight, no auth
+3. POST /mcp                                   → require Bearer; 401 otherwise
+4. on success: runWithUser(jwt.sub, () => transport.handleRequest(...))
+```
+
+The MCP authorization spec uses [RFC 9728 Protected Resource Metadata](https://datatracker.ietf.org/doc/html/rfc9728) for discovery: an unauthenticated client gets a 401 with `WWW-Authenticate: Bearer ..., resource_metadata="<url>"`, fetches that URL, and learns which Authorization Servers can issue tokens for this resource. Sky-tonight publishes that doc; it doesn't run an AS.
+
+**Why `AsyncLocalStorage`?** Two tools (`log_observation`, `recall_log`) need the user identity. The other nine don't. Threading a `userId` argument through every `register*()` signature would touch every tool file for nothing. ALS lets only the tools that care read `currentUserId()`, and lets the transport set it once at the top of the handler. Stdio's setup is the constant `"local"`; HTTP's is `jwt.sub`. The lib layer is unaware of which transport is active.
+
+**The schema migration.** v0.5's DB had no `user_id` column. v0.6 adds it via `ALTER TABLE ... ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'` so existing rows backfill cleanly to the local-stdio scope. New databases skip the DEFAULT — every insert must supply `userId`. This pattern (in-place additive migration, NOT NULL with a sensible backfill default) is what the v0.4 lesson promised: `src/lib/observation-log.ts` is the only place SQL lives, so adding a column is a one-place change. v0.7 will use the same trick to introduce a Postgres backend.
+
+What v0.6 does NOT add: token issuance, scope enforcement, refresh tokens, audit logs, HTTPS termination, or any new MCP tools or resources. v0.7 publishes to the registry.
+
 ### 5. The wire protocol — see it for yourself
 
 Run this in one terminal to manually drive the server with raw JSON-RPC:
@@ -379,7 +464,9 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
    │   ├── astronomy.ts ────────► astronomy-engine                   │
    │   ├── satellites.ts ──────► satellite.js + fetch                │
    │   ├── catalog.ts ─────────► loads + filters JSON                │
-   │   └── observation-log.ts ─► better-sqlite3                      │
+   │   ├── observation-log.ts ─► better-sqlite3 (per-user)           │
+   │   ├── auth.ts ────────────► jose (HS256 / JWKS)                 │
+   │   └── user-context.ts ────► node:async_hooks                    │
    │                          │              │                       │
    └──────────────────────────┼──────────────┼───────────────────────┘
                               ▼              ▼
@@ -399,7 +486,7 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 
 **v0.5 ✅** Streamable HTTP transport — `src/http.ts` adds a stateless `POST /mcp` entry behind the same `createMcpServer()` factory the stdio entry uses. No auth, no sessions; bind defaults to `127.0.0.1` because v0.6 owns auth. The server now runs as a long-lived process any MCP host (or curl) can talk to.
 
-**v0.6 — OAuth 2.1.** Required for multi-user remote servers. Personal data (your observation log) gets per-user scoping; public catalogs stay public.
+**v0.6 ✅** OAuth 2.1 Resource Server — HTTP transport now requires a Bearer JWT, advertises auth metadata at `.well-known/oauth-protected-resource`, and partitions the observation log per-user via `jwt.sub`. Two configuration paths: HS256 + dev-only token minter for local testing, or RS256 via JWKS for production behind any RFC-compliant authorization server. Stdio is unchanged; rows it writes are scoped to a constant `"local"` user.
 
 **v0.7 — Publish.** Submit to the public MCP registry. Real users.
 
