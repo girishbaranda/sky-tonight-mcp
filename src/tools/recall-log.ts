@@ -58,7 +58,7 @@ export function registerRecallLog(server: McpServer): void {
 
       let rows;
       try {
-        rows = recallObservations(filters);
+        rows = await recallObservations(filters);
       } catch (err) {
         return {
           isError: true,

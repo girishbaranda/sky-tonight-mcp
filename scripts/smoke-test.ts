@@ -74,8 +74,8 @@ console.log("\n=== Observation log roundtrip (in-memory) ===");
 {
   const { _resetForTest, _closeForTest, logObservation, recallObservations } =
     await import("../src/lib/observation-log.js");
-  _resetForTest(":memory:");
-  const written = logObservation({
+  await _resetForTest(":memory:");
+  const written = await logObservation({
     userId: "local",
     target: "Jupiter",
     latitude: 23.21,
@@ -88,13 +88,13 @@ console.log("\n=== Observation log roundtrip (in-memory) ===");
     console.error("expected id=1 on first insert");
     process.exit(1);
   }
-  const read = recallObservations({ userId: "local", target: "jup" });
+  const read = await recallObservations({ userId: "local", target: "jup" });
   console.log(`recalled: ${read.length} row(s)`);
   if (read.length !== 1 || read[0].target !== "Jupiter" || read[0].seeing !== 4) {
     console.error(`unexpected recall result: ${JSON.stringify(read)}`);
     process.exit(1);
   }
-  _closeForTest();
+  await _closeForTest();
 }
 
 console.log("\n=== JSON-RPC drive: resources + prompts ===");

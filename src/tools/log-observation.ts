@@ -55,7 +55,7 @@ export function registerLogObservation(server: McpServer): void {
     },
     async ({ target, latitude, longitude, timestamp, notes, seeing, transparency, equipment }) => {
       try {
-        const row = logObservation({
+        const row = await logObservation({
           userId: currentUserId(),
           target,
           latitude,
