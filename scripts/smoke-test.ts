@@ -315,6 +315,46 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase, with auth) =
       throw new Error(`PRM doc missing/invalid resource: ${JSON.stringify(prmDoc)}`);
     }
     console.log(`HTTP /.well-known/oauth-protected-resource: ${prmDoc.resource}`);
+
+    // 4. Scope enforcement: read-only token must be rejected by log_observation.
+    {
+      const readOnlyToken = await new SignJWT({ scope: "sky-tonight:log:read" })
+        .setProtectedHeader({ alg: "HS256" })
+        .setSubject("smoke-readonly")
+        .setIssuedAt()
+        .setExpirationTime("5m")
+        .sign(secretBytes);
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${readOnlyToken}`,
+          accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "log_observation",
+            arguments: {
+              target: "smoke-readonly-write-attempt",
+              latitude: 0,
+              longitude: 0,
+            },
+          },
+        }),
+      });
+      if (res.status !== 403) {
+        throw new Error(`smoke: expected 403 for read-only token writing, got ${res.status}`);
+      }
+      const ww = res.headers.get("www-authenticate") ?? "";
+      if (!ww.includes("sky-tonight:log:write")) {
+        throw new Error(`smoke: expected WWW-Authenticate to mention sky-tonight:log:write, got: ${ww}`);
+      }
+      console.log("HTTP scope enforcement: read-only token blocked from log_observation ✓");
+    }
   } finally {
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   }
