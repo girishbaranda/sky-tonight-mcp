@@ -1,6 +1,6 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { runWithUser, currentUserId } from "./user-context.js";
+import { runWithUser, currentUserId, currentScopes } from "./user-context.js";
 import { _resetProcessUserForTest, setProcessUser } from "./user-context.js";
 
 beforeEach(() => {
@@ -75,4 +75,20 @@ test("_resetProcessUserForTest restores the throw-on-no-scope behavior", () => {
   setProcessUser("temp");
   _resetProcessUserForTest();
   assert.throws(() => currentUserId(), /outside runWithUser scope/);
+});
+
+test("runWithUser threads scopes through the async chain", async () => {
+  await runWithUser("u", async () => {
+    assert.equal(currentUserId(), "u");
+    assert.deepEqual(currentScopes(), []);
+  }, []);
+  await runWithUser("u", async () => {
+    assert.deepEqual(currentScopes(), ["sky-tonight:log:read", "sky-tonight:log:write"]);
+  }, ["sky-tonight:log:read", "sky-tonight:log:write"]);
+});
+
+test("currentScopes() returns empty array outside any context (stdio)", () => {
+  _resetProcessUserForTest();
+  // Stdio sets the process user but not scopes — currentScopes() must not throw.
+  assert.deepEqual(currentScopes(), []);
 });
