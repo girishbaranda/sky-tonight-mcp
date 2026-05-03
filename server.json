@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.girishbaranda/sky-tonight",
+  "description": "Personal astronomy MCP — what's visible tonight from your location, ISS passes, moon phases, and a per-user observation log.",
+  "version": "0.7.0",
+  "repository": {
+    "url": "https://github.com/girishbaranda/sky-tonight-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "sky-tonight",
+      "version": "0.7.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://sky-tonight.techplanner.xyz/mcp"
+    }
+  ]
+}
