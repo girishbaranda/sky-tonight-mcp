@@ -136,6 +136,8 @@ npm run build
 npm run start:http
 ```
 
+**Behind a reverse proxy:** Ensure your proxy (Nginx, Caddy, Cloudflare, etc.) sets `X-Forwarded-Proto` and normalizes the `Host` header to your real public hostname. The server reflects whatever `Host` it receives back into the `WWW-Authenticate` header and the PRM `resource` field, so a misconfigured proxy (or a direct deployment with `HOST=0.0.0.0` and no proxy) lets a malicious client redirect MCP discovery to an attacker-controlled hostname. This is operator-level hygiene, not a code bug.
+
 The server validates token signatures against the JWKS public keys, requires `iss` and `aud` to match, requires `exp` to be in the future, and uses `sub` as the user identifier for log scoping. No client registration step happens inside sky-tonight; clients register at the AS, get tokens, and present them.
 
 `DEV_JWT_SECRET` and `OAUTH_JWKS_URL` are mutually exclusive — pick one. The HTTP server refuses to start with neither set.
@@ -152,7 +154,7 @@ The server validates token signatures against the JWKS public keys, requires `is
 SKY_TONIGHT_DB=/path/to/your.db claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
 ```
 
-The log is per-machine for now; multi-user / remote storage is on the roadmap (v0.6 OAuth). Use `SKY_TONIGHT_DB=":memory:"` for an ephemeral, in-process database — useful for tests and the smoke script.
+The log is partitioned per-user via the JWT `sub` claim on HTTP and a constant `"local"` user on stdio (see Authentication above), but the storage backend is still a single SQLite file per machine. Remote storage (Postgres, etc.) is on the v0.7+ roadmap. Use `SKY_TONIGHT_DB=":memory:"` for an ephemeral, in-process database — useful for tests and the smoke script.
 
 ## Reading this codebase as an MCP tutorial
 
@@ -307,7 +309,7 @@ You'll see three replies: the initialize handshake, the `prompts/list` result (t
 
 Every prior tool was pure compute. This one is the first that *remembers*: `log_observation` writes a row, `recall_log` reads it back, and the rows survive across MCP sessions because they live in a SQLite file on disk.
 
-The lib is the only file that imports `better-sqlite3` or contains SQL. Both tools call into it through a small typed surface — `logObservation(input)`, `recallObservations(filters)` — and never see a `Database` handle. That boundary is deliberate: when v0.5/v0.6 brings remote storage, the swap is "rewrite the lib internals, leave callers alone." The cost of an abstraction layer (a repository interface, an ORM) would not buy us anything we don't get from the boundary already.
+The lib is the only file that imports `better-sqlite3` or contains SQL. Both tools call into it through a small typed surface — `logObservation(input)`, `recallObservations(filters)` — and never see a `Database` handle. That boundary is deliberate: when a future version (v0.7+) brings remote storage, the swap is "rewrite the lib internals, leave callers alone." The cost of an abstraction layer (a repository interface, an ORM) would not buy us anything we don't get from the boundary already.
 
 Two design choices worth noting:
 
