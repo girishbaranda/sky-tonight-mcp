@@ -76,6 +76,7 @@ console.log("\n=== Observation log roundtrip (in-memory) ===");
     await import("../src/lib/observation-log.js");
   _resetForTest(":memory:");
   const written = logObservation({
+    userId: "local",
     target: "Jupiter",
     latitude: 23.21,
     longitude: 72.63,
@@ -87,7 +88,7 @@ console.log("\n=== Observation log roundtrip (in-memory) ===");
     console.error("expected id=1 on first insert");
     process.exit(1);
   }
-  const read = recallObservations({ target: "jup" });
+  const read = recallObservations({ userId: "local", target: "jup" });
   console.log(`recalled: ${read.length} row(s)`);
   if (read.length !== 1 || read[0].target !== "Jupiter" || read[0].seeing !== 4) {
     console.error(`unexpected recall result: ${JSON.stringify(read)}`);
@@ -228,18 +229,25 @@ async function driveServer(): Promise<void> {
   });
 }
 
-console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
+console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase, with auth) ===");
 {
   const { startHttpServer } = await import("../src/http.js");
-  const httpServer = await startHttpServer({ host: "127.0.0.1", port: 0 });
+  const { SignJWT } = await import("jose");
+  const SECRET = "smoke-test-secret-do-not-use";
+  const secretBytes = new TextEncoder().encode(SECRET);
+  const httpServer = await startHttpServer({
+    host: "127.0.0.1",
+    port: 0,
+    authConfig: { mode: "hs256", secret: secretBytes },
+  });
   const addr = httpServer.address();
   if (!addr || typeof addr === "string") {
     throw new Error("expected an inet address from http server");
   }
   const url = `http://127.0.0.1:${addr.port}/mcp`;
   try {
-    // initialize
-    const initRes = await fetch(url, {
+    // 1. Unauthenticated → 401.
+    const noAuth = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
@@ -253,13 +261,28 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
         },
       }),
     });
-    if (initRes.status !== 200) {
-      throw new Error(`HTTP initialize failed: ${initRes.status} ${await initRes.text()}`);
+    if (noAuth.status !== 401) {
+      throw new Error(`expected 401 for unauthenticated POST, got ${noAuth.status}: ${await noAuth.text()}`);
     }
-    // tools/call moon_phase
-    const res = await fetch(url, {
+    if (!noAuth.headers.get("www-authenticate")?.includes("resource_metadata")) {
+      throw new Error("expected WWW-Authenticate with resource_metadata on 401");
+    }
+    console.log(`HTTP /mcp without auth: 401 ✓`);
+
+    // 2. With token → 200.
+    const token = await new SignJWT({})
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("smoke-user")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(secretBytes);
+    const authed = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 2,
@@ -267,7 +290,7 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
         params: { name: "moon_phase", arguments: {} },
       }),
     });
-    const text = await res.text();
+    const text = await authed.text();
     let parsed: any = null;
     try {
       parsed = JSON.parse(text);
@@ -276,13 +299,22 @@ console.log("\n=== HTTP transport round-trip (POST /mcp moon_phase) ===");
       if (dataLine) parsed = JSON.parse(dataLine.slice(6));
     }
     if (parsed === null) {
-      throw new Error(`HTTP body was neither JSON nor SSE-framed:\nstatus=${res.status}\nbody:\n${text}`);
+      throw new Error(`HTTP body was neither JSON nor SSE-framed:\nstatus=${authed.status}\nbody:\n${text}`);
     }
-    if (res.status !== 200) throw new Error(`HTTP ${res.status}: ${text}`);
+    if (authed.status !== 200) throw new Error(`HTTP ${authed.status}: ${text}`);
     if (!parsed?.result?.content?.[0]?.text) {
       throw new Error(`unexpected HTTP response: ${text}`);
     }
-    console.log(`HTTP /mcp moon_phase: ${parsed.result.content[0].text.split("\n")[0]}`);
+    console.log(`HTTP /mcp moon_phase (authed): ${parsed.result.content[0].text.split("\n")[0]}`);
+
+    // 3. PRM endpoint reachable, no auth.
+    const prm = await fetch(`http://127.0.0.1:${addr.port}/.well-known/oauth-protected-resource`);
+    if (prm.status !== 200) throw new Error(`PRM endpoint returned ${prm.status}`);
+    const prmDoc = await prm.json();
+    if (!prmDoc.resource?.includes("/mcp")) {
+      throw new Error(`PRM doc missing/invalid resource: ${JSON.stringify(prmDoc)}`);
+    }
+    console.log(`HTTP /.well-known/oauth-protected-resource: ${prmDoc.resource}`);
   } finally {
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   }
