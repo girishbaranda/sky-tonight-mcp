@@ -86,6 +86,10 @@ test("runMigrations against pre-v0.6 SQLite (observations, no user_id) stamps ve
   assert.match(realDdl[0].sql, /ADD COLUMN/i);
 });
 
-test.skip("runMigrations on Postgres adapter loads .postgres.sql files", async () => {
-  // Unblocked in Task 8 once migrations/001_init.postgres.sql exists.
+test("runMigrations on Postgres adapter loads .postgres.sql files", async () => {
+  const { adapter, state } = makeFakeAdapter("postgres");
+  await runMigrations(adapter);
+  assert.equal(state.ddlExecutions.length, 2);
+  // Postgres init contains BIGSERIAL (Postgres-specific syntax).
+  assert.match(state.ddlExecutions[0].sql, /BIGSERIAL|GENERATED/i);
 });
