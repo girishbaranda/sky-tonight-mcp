@@ -9,6 +9,7 @@ import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
 import type { StorageBackend } from "./backend.js";
 import type { Observation, ObservationInput, RecallFilters } from "../observation-log.js";
+import { runMigrations, type MigrationAdapter } from "./migrations.js";
 
 interface Row {
   id: number;
@@ -42,6 +43,7 @@ function rowToObservation(r: Row): Observation {
 
 export class SqliteBackend implements StorageBackend {
   private readonly conn: Database.Database;
+  private migrationsReady: Promise<void>;
 
   constructor(path: string) {
     if (path !== ":memory:") {
@@ -50,37 +52,56 @@ export class SqliteBackend implements StorageBackend {
     const conn = new Database(path);
     conn.pragma("journal_mode = WAL");
     conn.pragma("foreign_keys = ON");
-
-    // Schema bootstrap (replaced by migration runner in Task 7).
-    conn.exec(`
-      CREATE TABLE IF NOT EXISTS observations (
-        id           INTEGER PRIMARY KEY,
-        user_id      TEXT    NOT NULL,
-        observed_at  TEXT    NOT NULL,
-        latitude     REAL    NOT NULL,
-        longitude    REAL    NOT NULL,
-        target       TEXT    NOT NULL,
-        notes        TEXT,
-        seeing       INTEGER,
-        transparency INTEGER,
-        equipment    TEXT,
-        created_at   TEXT    NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_obs_target_lower ON observations(LOWER(target));
-    `);
-    const cols = conn
-      .prepare("PRAGMA table_info(observations)")
-      .all() as Array<{ name: string }>;
-    const hasUserId = cols.some((c) => c.name === "user_id");
-    if (cols.length > 0 && !hasUserId) {
-      conn.exec(`ALTER TABLE observations ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'`);
-    }
-    conn.exec(`CREATE INDEX IF NOT EXISTS idx_obs_user_observed_at ON observations(user_id, observed_at)`);
-
     this.conn = conn;
+    this.migrationsReady = runMigrations(this.makeAdapter());
+  }
+
+  private makeAdapter(): MigrationAdapter {
+    const conn = this.conn;
+    return {
+      engine: "sqlite",
+      async ensureMigrationsTable() {
+        conn.exec(`
+          CREATE TABLE IF NOT EXISTS _migrations (
+            version    INTEGER PRIMARY KEY,
+            applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `);
+      },
+      async getApplied() {
+        const rows = conn
+          .prepare("SELECT version FROM _migrations ORDER BY version ASC")
+          .all() as Array<{ version: number }>;
+        return rows.map((r) => r.version);
+      },
+      async applyMigration(version, sql) {
+        const tx = conn.transaction(() => {
+          conn.exec(sql);
+          conn.prepare("INSERT INTO _migrations (version) VALUES (?)").run(version);
+        });
+        tx();
+      },
+      async inspectExistingSchema() {
+        const tableRow = conn
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='observations'",
+          )
+          .get();
+        const hasObservationsTable = !!tableRow;
+        let hasUserIdColumn = false;
+        if (hasObservationsTable) {
+          const cols = conn
+            .prepare("PRAGMA table_info(observations)")
+            .all() as Array<{ name: string }>;
+          hasUserIdColumn = cols.some((c) => c.name === "user_id");
+        }
+        return { hasObservationsTable, hasUserIdColumn };
+      },
+    };
   }
 
   async insert(input: ObservationInput): Promise<Observation> {
+    await this.migrationsReady;
     const observedAt = (input.observedAt ?? new Date()).toISOString();
     const createdAt = new Date().toISOString();
     const stmt = this.conn.prepare(`
@@ -105,6 +126,7 @@ export class SqliteBackend implements StorageBackend {
   }
 
   async query(filters: RecallFilters): Promise<Observation[]> {
+    await this.migrationsReady;
     let limit = filters.limit ?? 20;
     if (!Number.isFinite(limit) || limit <= 0) {
       throw new Error(`recallObservations: limit must be > 0 (got ${filters.limit})`);

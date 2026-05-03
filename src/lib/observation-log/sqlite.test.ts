@@ -16,7 +16,9 @@ afterEach(async () => {
   await backend.close();
 });
 
-test("schema bootstrap creates the observations table with expected columns", () => {
+test("schema bootstrap creates the observations table with expected columns", async () => {
+  // Trigger migrationsReady before reading schema synchronously.
+  await backend.query({ userId: "u" });
   const conn = backend._getConnForTest();
   const cols = conn
     .prepare("PRAGMA table_info(observations)")
@@ -41,7 +43,8 @@ test("schema bootstrap creates the observations table with expected columns", ()
   assert.equal(byName.observed_at.notnull, 1);
 });
 
-test("schema bootstrap creates the user/observed_at composite index", () => {
+test("schema bootstrap creates the user/observed_at composite index", async () => {
+  await backend.query({ userId: "u" });
   const conn = backend._getConnForTest();
   const idx = conn
     .prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='observations'")
@@ -78,6 +81,8 @@ test("ALTER from v0.5 schema (no user_id) backfills with 'local'", async () => {
 
   // Re-open via SqliteBackend and confirm the migration ran.
   const b = new SqliteBackend(dbPath);
+  // Trigger migrationsReady to settle before inspecting schema.
+  await b.query({ userId: "local" });
   const conn = b._getConnForTest();
   const cols = conn.prepare("PRAGMA table_info(observations)").all() as Array<{ name: string }>;
   assert.ok(cols.some((c) => c.name === "user_id"));
@@ -86,4 +91,18 @@ test("ALTER from v0.5 schema (no user_id) backfills with 'local'", async () => {
 
   await b.close();
   rmSync(dir, { recursive: true, force: true });
+});
+
+test("_migrations table records applied versions on a fresh DB", async () => {
+  // beforeEach already constructed a fresh in-memory backend; let migrationsReady settle.
+  // Trigger it by running a query (insert/query both await migrationsReady).
+  await backend.query({ userId: "u" });
+  const conn = backend._getConnForTest();
+  const rows = conn
+    .prepare("SELECT version FROM _migrations ORDER BY version ASC")
+    .all() as Array<{ version: number }>;
+  assert.deepEqual(
+    rows.map((r) => r.version),
+    [1, 2],
+  );
 });

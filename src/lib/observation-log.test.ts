@@ -224,6 +224,9 @@ test("migration: opening a v0.5-shaped DB adds user_id column with default 'loca
     // 2. Re-open with the v0.6 lib code.
     await _resetForTest(dbPath);
 
+    // Trigger migrations to settle (runner is async; recall awaits migrationsReady).
+    await recallObservations({ userId: "local" });
+
     // 3. Assert column was added.
     const conn2 = _getSqliteConnForTest();
     const cols = conn2
