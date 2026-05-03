@@ -270,3 +270,26 @@ test("logObservation returns userId on the row", async () => {
   const row = await logObservation({ userId: "alice", target: "M31", latitude: 0, longitude: 0 });
   assert.equal(row.userId, "alice");
 });
+
+test("backend selection: empty DATABASE_URL → SqliteBackend (no PG connection attempted)", async () => {
+  // We can't easily exercise this end-to-end because PostgresBackend tries to
+  // connect on construction. Instead, this test verifies the documented
+  // invariant that an empty-string DATABASE_URL falls through to SQLite.
+  // The full "DATABASE_URL set → Postgres" path is exercised by postgres.test.ts.
+  const prev = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = "";
+  try {
+    await _resetForTest(":memory:");
+    // No connection error means we got SqliteBackend, not PostgresBackend.
+    await logObservation({
+      userId: "u",
+      target: "T",
+      latitude: 0,
+      longitude: 0,
+    });
+    const rows = await recallObservations({ userId: "u" });
+    assert.equal(rows.length, 1);
+  } finally {
+    process.env.DATABASE_URL = prev;
+  }
+});

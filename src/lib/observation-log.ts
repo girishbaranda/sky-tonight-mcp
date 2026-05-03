@@ -10,6 +10,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { SqliteBackend } from "./observation-log/sqlite.js";
+import { PostgresBackend } from "./observation-log/postgres.js";
 import type { StorageBackend } from "./observation-log/backend.js";
 
 let backend: StorageBackend | null = null;
@@ -24,7 +25,10 @@ function resolveSqlitePath(): string {
 }
 
 function makeBackend(): StorageBackend {
-  // DATABASE_URL → Postgres (wired in Task 10). For now, always SQLite.
+  const dbUrl = process.env.DATABASE_URL;
+  if (dbUrl && dbUrl.length > 0) {
+    return new PostgresBackend({ connectionString: dbUrl });
+  }
   return new SqliteBackend(resolveSqlitePath());
 }
 
