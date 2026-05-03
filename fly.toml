@@ -1,0 +1,35 @@
+# fly.toml — sky-tonight deployment config
+# Provision: `flyctl launch --no-deploy --copy-config` to apply this.
+
+app = "sky-tonight"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PUBLIC_URL = "https://sky-tonight.techplanner.xyz"
+  # OAUTH_AUDIENCE matches PUBLIC_URL (Logto API resource identifier).
+  OAUTH_AUDIENCE = "https://sky-tonight.techplanner.xyz"
+  # OAUTH_ISSUER, OAUTH_JWKS_URL, DATABASE_URL are set via `flyctl secrets set`.
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "5s"
+  interval = "30s"
+  method = "GET"
+  path = "/.well-known/oauth-protected-resource"
+  protocol = "http"
+  timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
