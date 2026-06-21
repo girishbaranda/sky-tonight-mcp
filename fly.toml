@@ -8,9 +8,9 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
 
 [env]
-  PUBLIC_URL = "https://sky-tonight.techplanner.xyz"
+  PUBLIC_URL = "https://sky-tonight.fly.dev"
   # OAUTH_AUDIENCE matches PUBLIC_URL (Logto API resource identifier).
-  OAUTH_AUDIENCE = "https://sky-tonight.techplanner.xyz"
+  OAUTH_AUDIENCE = "https://sky-tonight.fly.dev"
   # OAUTH_ISSUER, OAUTH_JWKS_URL, DATABASE_URL are set via `flyctl secrets set`.
 
 [http_service]
