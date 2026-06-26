@@ -4,9 +4,37 @@ A Model Context Protocol (MCP) server for personal astronomy. Ask any MCP-compat
 
 This repo is also a learning project, structured so reading it is the fastest path to understanding MCP end-to-end.
 
+## Install
+
+Three ways to use Sky Tonight, depending on what you want:
+
+### Hosted (recommended)
+
+A managed instance runs at **`https://sky-tonight.fly.dev/mcp`**. Add it to any MCP
+client that supports remote servers with OAuth — your client discovers the auth
+flow automatically and prompts you to sign in the first time you use the log. In
+Claude Desktop / Cursor, add a remote MCP server pointing at that URL. No install,
+no API keys; the first `log_observation` call asks you to grant the
+`sky-tonight:log:write` scope.
+
+### Local stdio (single-user, no auth)
+
+Run it as a local subprocess — the simplest path, backed by a local SQLite file:
+
+```bash
+npx @girishbaranda/sky-tonight          # stdio server
+# or wire it into Claude Code:
+claude mcp add sky-tonight -- npx @girishbaranda/sky-tonight
+```
+
+### Self-host HTTP (multi-user)
+
+Run your own hosted instance (Docker + Postgres + an OAuth server). See
+**[docs/deploy.md](docs/deploy.md)** for the full recipe.
+
 ## What this server can do
 
-Six tools — four pure-compute (real ephemeris math, no LLM guessing), two backed by a local SQLite log of your observations:
+Six tools — four pure-compute (real ephemeris math, no LLM guessing), two backed by a per-user observation log (SQLite locally, Postgres when hosted):
 
 | Tool | Returns |
 |---|---|
@@ -88,7 +116,8 @@ Config (env vars):
 |---|---|---|
 | `PORT` | `3000` | Server bind port. |
 | `HOST` | `127.0.0.1` | Server bind host. Set `0.0.0.0` to expose externally (auth still required). |
-| `SKY_TONIGHT_DB` | `~/.sky-tonight/observations.db` | Same as v0.4. |
+| `SKY_TONIGHT_DB` | `~/.sky-tonight/observations.db` | SQLite path. Ignored when `DATABASE_URL` is set. |
+| `DATABASE_URL` | — | Postgres connection string. When set, selects the Postgres backend instead of SQLite (see §4.11). |
 | `DEV_JWT_SECRET` | — | Dev-only HS256 secret. **Never** use in production. Mutually exclusive with `OAUTH_JWKS_URL`. |
 | `OAUTH_JWKS_URL` | — | URL to the authorization server's JWKS document. Production path. |
 | `OAUTH_ISSUER` | — | Required when `OAUTH_JWKS_URL` is set. Must match the JWT's `iss` claim. |
@@ -154,7 +183,7 @@ The server validates token signatures against the JWKS public keys, requires `is
 SKY_TONIGHT_DB=/path/to/your.db claude mcp add sky-tonight -- npx tsx /absolute/path/to/sky-tonight/src/server.ts
 ```
 
-The log is partitioned per-user via the JWT `sub` claim on HTTP and a constant `"local"` user on stdio (see Authentication above), but the storage backend is still a single SQLite file per machine. Remote storage (Postgres, etc.) is on the v0.7+ roadmap. Use `SKY_TONIGHT_DB=":memory:"` for an ephemeral, in-process database — useful for tests and the smoke script.
+The log is partitioned per-user via the JWT `sub` claim on HTTP and a constant `"local"` user on stdio (see Authentication above). Storage is pluggable as of v0.7: SQLite by default (a single file per machine), or **Postgres** when `DATABASE_URL` is set — required for the hosted, multi-user instance. See §4.11 for the backend split and [docs/deploy.md](docs/deploy.md) for the hosted recipe. Use `SKY_TONIGHT_DB=":memory:"` for an ephemeral, in-process SQLite database — useful for tests and the smoke script.
 
 ## Reading this codebase as an MCP tutorial
 
@@ -309,7 +338,7 @@ You'll see three replies: the initialize handshake, the `prompts/list` result (t
 
 Every prior tool was pure compute. This one is the first that *remembers*: `log_observation` writes a row, `recall_log` reads it back, and the rows survive across MCP sessions because they live in a SQLite file on disk.
 
-The lib is the only file that imports `better-sqlite3` or contains SQL. Both tools call into it through a small typed surface — `logObservation(input)`, `recallObservations(filters)` — and never see a `Database` handle. That boundary is deliberate: when a future version (v0.7+) brings remote storage, the swap is "rewrite the lib internals, leave callers alone." The cost of an abstraction layer (a repository interface, an ORM) would not buy us anything we don't get from the boundary already.
+The lib is the only file that imports `better-sqlite3` or contains SQL. Both tools call into it through a small typed surface — `logObservation(input)`, `recallObservations(filters)` — and never see a `Database` handle. That boundary is deliberate: when v0.7 brought remote storage (a Postgres backend — §4.11), the swap was exactly that — rewrite the lib internals, leave callers alone. The cost of an abstraction layer (a repository interface, an ORM) would not buy us anything we don't get from the boundary already.
 
 Two design choices worth noting:
 
@@ -370,7 +399,7 @@ curl -s -X POST http://127.0.0.1:3000/mcp \
 
 The reply you get back is the same shape you'd get from the stdio server — because it *is* the same server. The transport changed; nothing else did.
 
-What this version did NOT add: authentication, sessions, deploy recipes. §4.10 covers how v0.6 fills the auth gap with OAuth 2.1 and per-user data scoping; v0.7 will publish to the registry.
+What this version did NOT add: authentication, sessions, deploy recipes. §4.10 covers how v0.6 fills the auth gap with OAuth 2.1 and per-user data scoping; §4.11 covers the v0.7 Postgres backend and the published, hosted instance.
 
 ### 4.10 `src/lib/auth.ts` — your first protected MCP
 
@@ -402,9 +431,48 @@ The MCP authorization spec uses [RFC 9728 Protected Resource Metadata](https://d
 
 **Why `AsyncLocalStorage`?** Two tools (`log_observation`, `recall_log`) need the user identity. The other nine don't. Threading a `userId` argument through every `register*()` signature would touch every tool file for nothing. ALS lets only the tools that care read `currentUserId()`, and lets the transport set it once at the top of the handler. Stdio's setup is the constant `"local"`; HTTP's is `jwt.sub`. The lib layer is unaware of which transport is active.
 
-**The schema migration.** v0.5's DB had no `user_id` column. v0.6 adds it via `ALTER TABLE ... ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'` so existing rows backfill cleanly to the local-stdio scope. New databases skip the DEFAULT — every insert must supply `userId`. This pattern (in-place additive migration, NOT NULL with a sensible backfill default) is what the v0.4 lesson promised: `src/lib/observation-log.ts` is the only place SQL lives, so adding a column is a one-place change. v0.7 will use the same trick to introduce a Postgres backend.
+**The schema migration.** v0.5's DB had no `user_id` column. v0.6 adds it via `ALTER TABLE ... ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'` so existing rows backfill cleanly to the local-stdio scope. New databases skip the DEFAULT — every insert must supply `userId`. This pattern (in-place additive migration, NOT NULL with a sensible backfill default) is what the v0.4 lesson promised: `src/lib/observation-log.ts` is the only place SQL lives, so adding a column is a one-place change. v0.7 used the same boundary to introduce a Postgres backend (§4.11).
 
-What v0.6 does NOT add: token issuance, scope enforcement, refresh tokens, audit logs, HTTPS termination, or any new MCP tools or resources. v0.7 publishes to the registry.
+What v0.6 does NOT add: token issuance, scope enforcement, refresh tokens, audit logs, HTTPS termination, or any new MCP tools or resources. Scope enforcement and a second storage backend arrive in v0.7 — see §4.11.
+
+### 4.11 `src/lib/observation-log/` — a second storage backend
+
+v0.4 promised that `observation-log.ts` being the only place SQL lives would make a
+future Postgres swap mechanical. v0.7 cashes that in. The file splits into a public
+surface plus two interchangeable engines:
+
+```
+src/lib/observation-log.ts            # public API: logObservation / recallObservations
+src/lib/observation-log/backend.ts    # StorageBackend interface: { insert, query, close }
+src/lib/observation-log/sqlite.ts     # better-sqlite3 engine (default)
+src/lib/observation-log/postgres.ts   # pg engine (when DATABASE_URL is set)
+src/lib/observation-log/migrations.ts # numbered, engine-scoped migration runner
+```
+
+**Backend selection is one env var.** At module init, `DATABASE_URL` present →
+Postgres; absent → SQLite (`SKY_TONIGHT_DB`). The tool handlers and their
+`logObservation()` / `recallObservations()` calls are unchanged — the swap is purely
+internal, exactly as the v0.4 boundary promised.
+
+**Migrations replace boot-time DDL.** Instead of v0.6's inline `CREATE TABLE IF NOT
+EXISTS … ALTER TABLE …`, there's a `migrations/` folder with engine-scoped files
+(`001_init.sqlite.sql`, `001_init.postgres.sql`, …). A tiny in-process runner applies
+pending migrations under a transaction on boot and records them in `_migrations`. An
+existing v0.6 SQLite database is detected and stamped to the current version without
+re-running DDL, so upgrades keep their data with no manual step.
+
+**Scope enforcement.** The two scopes v0.6's PRM doc advertised now actually gate
+calls. A static map (MCP method + tool name → required scope) lives in
+`src/lib/scope-map.ts`; the HTTP boundary checks the JWT's `scope` claim before
+dispatch. `recall_log` needs `sky-tonight:log:read`, `log_observation` needs
+`sky-tonight:log:write`; everything else needs only a valid token. A missing scope
+returns JSON-RPC `-32001` with an RFC 6750 `WWW-Authenticate: Bearer
+error="insufficient_scope", scope="…"` header so the client can re-run the OAuth flow
+asking for it. Stdio is untouched — no token, no scopes.
+
+The lesson: the v0.4 "one place for SQL" boundary and the v0.6 "auth at the
+boundary" pattern both pay off here — a whole new engine and a whole new authz check
+land without any tool handler changing.
 
 ### 5. The wire protocol — see it for yourself
 
@@ -491,7 +559,20 @@ You'll see three JSON responses: the `initialize` reply (capability negotiation)
 
 **v0.6 ✅** OAuth 2.1 Resource Server — HTTP transport now requires a Bearer JWT, advertises auth metadata at `.well-known/oauth-protected-resource`, and partitions the observation log per-user via `jwt.sub`. Two configuration paths: HS256 + dev-only token minter for local testing, or RS256 via JWKS for production behind any RFC-compliant authorization server. Stdio is unchanged; rows it writes are scoped to a constant `"local"` user.
 
-**v0.7 — Publish.** Submit to the public MCP registry. Real users.
+**v0.7 ✅** Publish — a hosted instance at `https://sky-tonight.fly.dev` (Fly.io,
+Docker, non-root, scale-to-zero), a second **Postgres** storage backend selected by
+`DATABASE_URL` (file-based migrations runner; SQLite stays the local/stdio default),
+and **scope enforcement** so `sky-tonight:log:read` / `sky-tonight:log:write`
+actually gate the log with RFC 6750 `WWW-Authenticate` challenges. Published to npm
+as [`@girishbaranda/sky-tonight`](https://www.npmjs.com/package/@girishbaranda/sky-tonight)
+and submitted to the public MCP registry as `io.github.girishbaranda/sky-tonight`.
+
+**v0.8 — next.** Candidates: finer-grained scopes (catalog vs. log), an
+observation-export tool, observation tagging.
+
+**What v0.7 does NOT add:** per-user quotas or rate limits, audit logs, an admin UI,
+roaming of local SQLite data to the hosted Postgres, JSONB indexes on notes,
+multi-region replication, or a self-hosted Logto recipe (Logto Cloud only).
 
 Each step is 1–3 evenings of work and teaches a discrete MCP concept.
 
