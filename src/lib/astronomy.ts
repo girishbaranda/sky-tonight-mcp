@@ -5,10 +5,18 @@
  * given a body, a date, and an observer location, it computes positions
  * to ~arcsecond accuracy with no API calls. Perfect for an MCP server.
  */
-import Astronomy from "astronomy-engine";
+import { createRequire } from "node:module";
+import type * as AstronomyNS from "astronomy-engine";
+
+// astronomy-engine ships a dual CJS/ESM build whose ESM entry exposes only named
+// exports (no default). createRequire pins the CJS build in both tsx (tests) and
+// compiled Node ESM (prod), sidestepping the dual-package hazard that crashes
+// `import Astronomy from` (no default in ESM build) and `import * as` (esbuild
+// leaves named members undefined on the CJS build).
+const Astronomy = createRequire(import.meta.url)("astronomy-engine") as typeof AstronomyNS;
 
 /** Bodies we care about for naked-eye / binocular observing. */
-export const VISIBLE_BODIES: Astronomy.Body[] = [
+export const VISIBLE_BODIES: AstronomyNS.Body[] = [
   Astronomy.Body.Moon,
   Astronomy.Body.Mercury,
   Astronomy.Body.Venus,
@@ -35,7 +43,7 @@ export interface BodyPosition {
 
 /** Compute a body's alt/az and brightness at a given moment from an observer. */
 export function computePosition(
-  body: Astronomy.Body,
+  body: AstronomyNS.Body,
   date: Date,
   observer: ObserverInput,
 ): BodyPosition {

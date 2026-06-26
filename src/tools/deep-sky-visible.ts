@@ -15,7 +15,12 @@
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import Astronomy from "astronomy-engine";
+import { createRequire } from "node:module";
+import type * as AstronomyNS from "astronomy-engine";
+
+// See src/lib/astronomy.ts: createRequire pins astronomy-engine's CJS build so
+// the import works under both tsx and compiled Node ESM (dual-package hazard).
+const Astronomy = createRequire(import.meta.url)("astronomy-engine") as typeof AstronomyNS;
 import {
   loadMessier,
   filterMessierByType,
